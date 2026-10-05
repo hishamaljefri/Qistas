@@ -1,0 +1,37 @@
+{"id": "Q01", "question": "كم أقصى مدة لفترة التجربة في عقد العمل؟", "expected_labor_articles": ["53"], "topic": "probation"}
+{"id": "Q02", "question": "كم ساعة يسمح لصاحب العمل أن يشغلني في اليوم؟", "expected_labor_articles": ["98"], "topic": "hours"}
+{"id": "Q03", "question": "هل يجوز زيادة ساعات العمل إلى تسع ساعات يوميا؟", "expected_labor_articles": ["99"], "topic": "hours"}
+{"id": "Q04", "question": "أعمل ساعات إضافية بعد الدوام، كيف يحسب أجرها؟", "expected_labor_articles": ["107"], "topic": "overtime"}
+{"id": "Q05", "question": "كم يوم إجازتي السنوية وهل تزيد بعد خمس سنوات؟", "expected_labor_articles": ["109"], "topic": "leave"}
+{"id": "Q06", "question": "تركت العمل ولم آخذ إجازتي السنوية، هل أستحق تعويضا عنها؟", "expected_labor_articles": ["111"], "topic": "leave"}
+{"id": "Q07", "question": "مرضت وأعطاني الطبيب إجازة، هل يخصم راتبي؟", "expected_labor_articles": ["117"], "topic": "leave"}
+{"id": "Q08", "question": "كم مدة إجازة الولادة للموظفة؟", "expected_labor_articles": ["151"], "topic": "women"}
+{"id": "Q09", "question": "تزوجت الأسبوع الماضي، هل لي إجازة بأجر؟", "expected_labor_articles": ["113"], "topic": "leave"}
+{"id": "Q10", "question": "توفي والدي، كم يوم إجازة أستحق؟", "expected_labor_articles": ["113"], "topic": "leave"}
+{"id": "Q11", "question": "أريد أداء فريضة الحج، هل يعطيني صاحب العمل إجازة؟", "expected_labor_articles": ["114"], "topic": "leave"}
+{"id": "Q12", "question": "عندي اختبارات في الجامعة، هل أستحق إجازة؟", "expected_labor_articles": ["115"], "topic": "leave"}
+{"id": "Q13", "question": "اشتغلت سبع سنوات وانتهى عقدي، كيف تحسب مكافأة نهاية الخدمة؟", "expected_labor_articles": ["84"], "topic": "eos"}
+{"id": "Q14", "question": "قدمت استقالتي بعد ثلاث سنوات، هل أستحق مكافأة نهاية الخدمة كاملة؟", "expected_labor_articles": ["85"], "topic": "eos"}
+{"id": "Q15", "question": "استقالت الموظفة بسبب زواجها، هل تستحق المكافأة كاملة؟", "expected_labor_articles": ["87"], "topic": "eos"}
+{"id": "Q16", "question": "في أي حالات يحق لصاحب العمل فصلي بدون مكافأة ولا إشعار؟", "expected_labor_articles": ["80"], "topic": "termination"}
+{"id": "Q17", "question": "غبت عن العمل عشرين يوما متتالية بدون عذر، هل يحق فصلي؟", "expected_labor_articles": ["80"], "topic": "termination"}
+{"id": "Q18", "question": "صاحب العمل لا يلتزم بالعقد، هل يحق لي ترك العمل بدون إشعار مع حفظ حقوقي؟", "expected_labor_articles": ["81"], "topic": "termination"}
+{"id": "Q19", "question": "فصلوني بدون سبب مشروع، كم التعويض الذي أستحقه؟", "expected_labor_articles": ["77"], "topic": "termination"}
+{"id": "Q20", "question": "كم مدة الإشعار المطلوبة إذا أردت إنهاء عقدي غير محدد المدة؟", "expected_labor_articles": ["75"], "topic": "termination"}
+{"id": "Q21", "question": "ما الحالات التي ينتهي فيها عقد العمل؟", "expected_labor_articles": ["74"], "topic": "termination"}
+{"id": "Q22", "question": "توفي العامل، هل ينتهي عقد العمل؟", "expected_labor_articles": ["79"], "topic": "termination"}
+{"id": "Q23", "question": "الشركة أخرت رواتبنا شهرين، متى يجب صرف الأجر؟", "expected_labor_articles": ["90"], "topic": "wages"}
+{"id": "Q24", "question": "خصم صاحب العمل من راتبي بدون موافقتي، هل هذا نظامي؟", "expected_labor_articles": ["92"], "topic": "wages"}
+{"id": "Q25", "question": "هل يوم الجمعة إجازة إلزامية للعمال؟", "expected_labor_articles": ["104"], "topic": "rest"}
+{"id": "Q26", "question": "وقعت على شرط عدم منافسة بعد ترك العمل، هل هو صحيح؟", "expected_labor_articles": ["83"], "topic": "contract"}
+{"id": "Q27", "question": "هل يجب أن يكون عقد العمل مكتوبا؟", "expected_labor_articles": ["51"], "topic": "contract"}
+{"id": "Q28", "question": "هل يحق لصاحب العمل نقلي إلى مدينة أخرى بدون موافقتي؟", "expected_labor_articles": ["58"], "topic": "contract"}
+{"id": "Q29", "question": "بعد انتهاء عملي أريد شهادة خبرة، هل يلزم صاحب العمل بإعطائي إياها؟", "expected_labor_articles": ["64"], "topic": "contract"}
+{"id": "Q30", "question": "أصبت أثناء العمل ولا أستطيع العمل مؤقتا، ما الذي أستحقه؟", "expected_labor_articles": ["137"], "topic": "injury"}
+{"id": "Q31", "question": "نتج عن إصابة العمل عجز دائم، كم التعويض؟", "expected_labor_articles": ["138"], "topic": "injury"}
+{"id": "Q32", "question": "هل يجوز فصل الموظفة وهي حامل؟", "expected_labor_articles": ["155"], "topic": "women"}
+{"id": "Q33", "question": "بعد عودتي من إجازة الولادة هل لي وقت للرضاعة؟", "expected_labor_articles": ["154"], "topic": "women"}
+{"id": "Q34", "question": "ما الحد الأدنى لسن تشغيل الأحداث؟", "expected_labor_articles": ["162"], "topic": "minors"}
+{"id": "Q35", "question": "ما العقوبة على صاحب العمل إذا خالف نظام العمل؟", "expected_labor_articles": ["229"], "topic": "penalties"}
+{"id": "Q36", "question": "ما نص المادة 84 من نظام العمل؟", "expected_labor_articles": ["84"], "topic": "explicit"}
+{"id": "Q37", "question": "ماذا تقول المادة السابعة والسبعون؟", "expected_labor_articles": ["77"], "topic": "explicit"}

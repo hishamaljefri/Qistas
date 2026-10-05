@@ -1,0 +1,76 @@
+{
+  "_comment": "Metadata for each source_group in QISTAS_Legal_Knowledge_Base_RAG.jsonl. collected_on = date the text was verified against the official source; the app shows it as 'knowledge base up to date as of'.",
+  "sources": {
+    "نظام العمل": {
+      "code": "LABOR_LAW",
+      "name_ar": "نظام العمل",
+      "legal_level": "law",
+      "authority": "هيئة الخبراء بمجلس الوزراء / وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "المرسوم الملكي رقم (م/51) وتاريخ 23/8/1426هـ وتعديلاته، وآخرها المرسوم الملكي رقم (م/44) وتاريخ 8/2/1446هـ (نافذ من 20/8/1446هـ)",
+      "source_url": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/08381293-6388-48e2-8ad2-a9a700f2aa94/1",
+      "collected_on": "2026-10-03",
+      "priority": "core"
+    },
+    "اللائحة التنفيذية": {
+      "code": "IMPL_REG",
+      "name_ar": "اللائحة التنفيذية لنظام العمل",
+      "legal_level": "regulation",
+      "authority": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "القرار الوزاري رقم (115921) وتاريخ 1446/08/19هـ",
+      "source_url": "https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894",
+      "collected_on": "2026-10-03",
+      "priority": "core"
+    },
+    "الملحق 1": {
+      "code": "ANNEX_1",
+      "name_ar": "الملحق (1): اللائحة النموذجية لتنظيم العمل (بما فيها جدول المخالفات والجزاءات التأديبية الداخلية)",
+      "legal_level": "annex",
+      "authority": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "ملحق باللائحة التنفيذية - القرار الوزاري رقم (115921)",
+      "source_url": "https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894",
+      "collected_on": "2026-10-03",
+      "priority": "secondary",
+      "notes_en": "Secondary: a model template for employers' internal rules that largely restates the Law; the Law and its Regulations rank above it."
+    },
+    "الملحق 2": {
+      "code": "ANNEX_2",
+      "name_ar": "الملحق (2): جدول الترتيبات والخدمات التيسيرية للأشخاص ذوي الإعاقة",
+      "legal_level": "annex",
+      "authority": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "ملحق باللائحة التنفيذية - القرار الوزاري رقم (115921)",
+      "source_url": "https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894",
+      "collected_on": "2026-10-03",
+      "priority": "secondary"
+    },
+    "الملحق 3": {
+      "code": "ANNEX_3",
+      "name_ar": "الملحق (3): ضوابط وقواعد ممارسة نشاط التوسط في توظيف السعوديين",
+      "legal_level": "annex",
+      "authority": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "ملحق باللائحة التنفيذية - القرار الوزاري رقم (115921)",
+      "source_url": "https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894",
+      "collected_on": "2026-10-03",
+      "priority": "secondary"
+    },
+    "الملحق 4": {
+      "code": "ANNEX_4",
+      "name_ar": "الملحق (4): قواعد ممارسة نشاط الاستقدام وتقديم الخدمات العمالية",
+      "legal_level": "annex",
+      "authority": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "ملحق باللائحة التنفيذية - القرار الوزاري رقم (115921)",
+      "source_url": "https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894",
+      "collected_on": "2026-10-03",
+      "priority": "secondary"
+    },
+    "الملحق 5": {
+      "code": "ANNEX_5",
+      "name_ar": "الملحق (5): نماذج عقود العمل (دائم، مؤقت/عرضي، لبعض الوقت، موسمي)",
+      "legal_level": "annex",
+      "authority": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "ملحق باللائحة التنفيذية - القرار الوزاري رقم (115921)",
+      "source_url": "https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894",
+      "collected_on": "2026-10-03",
+      "priority": "secondary"
+    }
+  }
+}

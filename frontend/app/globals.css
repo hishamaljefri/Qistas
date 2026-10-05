@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/*
+  DESIGN TOKENS: the single place that defines the look of the app.
+  Components only use these names (bg-surface, text-muted, border-line, bg-primary, rounded-card...),
+  never raw colors. To restyle the app (e.g. from a Claude Design system), change the values here
+  and the primitives in components/ui/. Nothing else needs to change.
+*/
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-muted: #f1f1ee;
+  --text: #1c1c1a;
+  --muted: #5f5f5a;
+  --line: #e2e2dc;
+  --primary: #1f5f4a;
+  --primary-fg: #ffffff;
+  --success: #1f7a4d;
+  --warning: #9a6b00;
+  --danger: #b3261e;
+  --radius-card: 12px;
+  --radius-control: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141413;
+    --surface: #1d1d1b;
+    --surface-muted: #262624;
+    --text: #ededea;
+    --muted: #a3a39c;
+    --line: #34342f;
+    --primary: #5fb894;
+    --primary-fg: #0f1a15;
+    --success: #6cc792;
+    --warning: #e0b44c;
+    --danger: #f08a80;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --radius-card: var(--radius-card);
+  --radius-control: var(--radius-control);
+  --font-sans: var(--font-arabic), system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
