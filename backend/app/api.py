@@ -8,13 +8,12 @@ from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from google.genai import errors as gemini_errors
 from sqlalchemy import func, select, text
 
-from app.analysis import DISCLAIMER, analyze_case
 from app.db import SessionLocal
-from app.models import Case, LegalProvision, LegalSource
-from app.schemas import AnalyzeRequest, AnalyzeResponse, ArticleOut, KBInfo, SearchHit, SourceOut
+from app.models import LegalProvision, LegalSource
+from app.routes import admin, auth, cases, documents
+from app.schemas import ArticleOut, KBInfo, SearchHit, SourceOut
 from app.search import search
 
 log = logging.getLogger("qistas")
@@ -29,7 +28,14 @@ app.add_middleware(
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Next.js dev server
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],  # lets the browser read download file names
 )
+app.include_router(auth.router)
+app.include_router(admin.router)
+app.include_router(cases.router)
+app.include_router(documents.router)
+
+# Public endpoints below: the law itself is public text, so search/articles need no login.
 
 
 @app.get("/api/health")
@@ -76,32 +82,3 @@ def get_provision(record_id: str) -> ArticleOut:
             status=p.status,
             status_note=p.status_note,
         )
-
-
-@app.post("/api/cases/analyze", response_model=AnalyzeResponse)
-def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
-    try:
-        return analyze_case(req)
-    except gemini_errors.APIError as e:
-        log.warning("Gemini error %s: %s", e.code, e.message)
-        raise HTTPException(503, "خدمة الذكاء الاصطناعي مشغولة حالياً، يرجى المحاولة بعد قليل") from e
-
-
-@app.get("/api/cases/{case_id}")
-def get_case(case_id: int) -> dict:
-    """A saved case. Returned masked: the original names/IDs are never stored."""
-    with SessionLocal() as session:
-        case = session.get(Case, case_id)
-        if case is None:
-            raise HTTPException(404, "القضية غير موجودة")
-        latest = case.analyses[-1] if case.analyses else None
-        return {
-            "case_id": case.id,
-            "created_at": case.created_at,
-            "masked_description": case.masked_description,
-            "pii_masked": case.pii_counts,
-            "analysis": latest.result if latest else None,
-            "retrieved_record_ids": latest.retrieved_record_ids if latest else [],
-            "model_version": latest.model_version if latest else None,
-            "disclaimer": DISCLAIMER,
-        }

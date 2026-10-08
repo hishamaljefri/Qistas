@@ -1,0 +1,18 @@
+<html><head><link rel="stylesheet" href="base.css"><style>
+body{width:900px}
+.grid{display:grid; grid-template-columns:repeat(15,1fr); gap:6px; margin-top:6px}
+.cell{border-radius:6px; padding:10px 0; text-align:center; font-weight:700; font-size:13px; color:#fff}
+.done{background:#1f5f4a} .part{background:#c99a2e} .no{background:#b3261e}
+.legend{margin-top:14px; font-size:14px; display:flex; gap:26px}
+.sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:6px}
+.big{font-size:40px; font-weight:700; color:#1f5f4a}
+</style></head><body>
+<div class="title">Functional requirements status (CS498 FR1–FR15)</div>
+<div style="display:flex; align-items:center; gap:26px">
+ <div><div class="big">87%</div><div class="small">13 of 15 complete<br>(90% counting FR15 as half)</div></div>
+ <div style="flex:1"><div class="grid" id="g"></div>
+ <div class="legend"><span><span class="sw done"></span>Complete (13)</span><span><span class="sw part"></span>Partial (1)</span><span><span class="sw no"></span>Not completed (1)</span></div></div>
+</div>
+<script>
+const st={7:"no",15:"part"};let h="";for(let i=1;i<=15;i++){h+=`<div class="cell ${st[i]||"done"}">FR${i}</div>`;}document.getElementById("g").innerHTML=h;
+</script></body></html>

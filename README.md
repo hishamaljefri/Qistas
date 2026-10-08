@@ -9,6 +9,17 @@ cd ~/projects/qistas
 Then open **http://localhost:3000** in your browser (Windows browsers work too).
 `Ctrl+C` in the terminal stops everything. API docs: http://127.0.0.1:8000/docs
 
+**First time:** register an account on the website, then make yourself admin:
+```bash
+cd ~/projects/qistas/backend
+~/.local/bin/uv run python -m scripts.create_admin --promote YOUR_USERNAME
+```
+(or create a new admin directly: `~/.local/bin/uv run python -m scripts.create_admin`).
+Log out and in again to see "إدارة المستخدمين".
+
+**Back up `.env`** somewhere private. `ENCRYPTION_KEY` unlocks the real names stored with
+saved cases; if it is lost, those names cannot be recovered. `JWT_SECRET` signs logins.
+
 Arabic web application that analyzes Saudi labor-law cases using Retrieval-Augmented
 Generation (RAG) over the official Labor Law, its Implementing Regulations and annexes.
 
@@ -140,3 +151,20 @@ Next.js 16 + TypeScript + Tailwind, Arabic RTL. Pages: case analysis (`/`), law 
 (`/search`), article (`/articles/[id]`). The API address can be changed with
 `NEXT_PUBLIC_API_URL` (default `http://127.0.0.1:8000`). The UI is deliberately plain and
 structured for a later redesign; see `frontend/DESIGN.md`.
+
+## Accounts, My Cases, documents, claim, downloads
+
+| Feature | Endpoints | Notes |
+|---|---|---|
+| Register / login (FR1, FR2) | `POST /api/auth/register`, `/login`, `/refresh`, `GET /api/auth/me` | bcrypt passwords; 30-minute tokens refreshed while active |
+| Admin (FR14) | `GET /api/admin/users`, `PATCH /api/admin/users/{id}` | roles `user` / `admin`, activate / deactivate |
+| Analyze (FR3) | `POST /api/cases/analyze` | login required; optional `documents` |
+| My Cases (FR12) | `GET /api/cases`, `GET/PATCH/DELETE /api/cases/{id}`, `POST /api/cases/{id}/reanalyze` | owner-only (admins can view all) |
+| Documents (FR4, FR5) | `POST /api/documents/extract` | text PDFs read locally; scans/photos → Gemini only with consent; file not stored |
+| Claim draft (FR10) | `POST/GET /api/cases/{id}/claim` | party details never sent to the AI; amounts from the calculator |
+| Downloads (FR13) | `GET /api/cases/{id}/report.pdf`, `/claim.pdf`, `/claim.docx` | Arabic RTL PDF (WeasyPrint) and editable Word |
+
+Privacy: the database stores masked text only. Real names/IDs are encrypted (Fernet, `ENCRYPTION_KEY`)
+and decrypted only for the case owner. Tests run on a separate `qistas_test` database
+(`uv run pytest`, 41 tests, Gemini faked). Test fixtures contain fictitious people and numbers.
+The Arabic PDF font (IBM Plex Sans Arabic, SIL Open Font License) is in `backend/assets/fonts/`.

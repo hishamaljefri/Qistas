@@ -178,3 +178,82 @@ tokens, UI primitives, screens, copy and logic so the visual design can be refin
 without changing application code (`frontend/DESIGN.md`). Verified with an automated
 headless-browser test: search → article page → case analysis (resignation after 8 years →
 two-thirds end-of-service award = 22,000 SAR, computed in code), with no browser errors.
+
+## Implementation status against the CS498 requirements (for Report Part I, Q3/Q4)
+
+### Functional requirements: 13 complete + 1 partial of 15 (≈ 87–90%)
+
+| ID | Requirement | Status | Evidence / how |
+|---|---|---|---|
+| FR1 | Register (username, email, password) | ✅ | `POST /api/auth/register`; `/register` page |
+| FR2 | Secure login | ✅ | bcrypt + 30-min JWT; `/login` page; tests for wrong/expired/forged tokens |
+| FR3 | Authenticated users input an Arabic case | ✅ | `POST /api/cases/analyze` requires login |
+| FR4 | Upload documents (PDF/image) | ✅ | `POST /api/documents/extract`; PDF/JPG/PNG/WEBP ≤ 10 MB, ≤ 10 pages |
+| FR5 | Extract text with OCR | ✅ | Text PDFs read locally (PyMuPDF); scans/photos read by Gemini after explicit consent (replaces DeepSeek-OCR) |
+| FR6 | Extract key legal entities (parties, dates, contracts, claims) | ✅ | Parties/IDs detected by the masking layer; wage, dates, contract type, claims extracted by the LLM into a fixed schema |
+| FR7 | Retrieve similar judicial decisions | ❌ | No accessible dataset of Saudi labor rulings yet; planned (see Q3) |
+| FR8 | Retrieve relevant labor-law articles | ✅ | Semantic search + article lookup + companion rules; Hit@5 100% (37 questions) |
+| FR9 | Identify missing legal elements | ✅ | `missing_information` in every analysis |
+| FR10 | Generate a draft Statement of Claim | ✅ | `POST /api/cases/{id}/claim`; facts, legal grounds, requests; amounts from code |
+| FR11 | Search the knowledge base | ✅ | `/search` page, `GET /api/search` |
+| FR12 | View, edit, delete own cases | ✅ | My Cases list; view; rename; edit description + re-analyze (versioned); delete |
+| FR13 | Download reports and draft claims | ✅ | Analysis report PDF; claim PDF + editable Word (.docx), Arabic RTL |
+| FR14 | Admin manages accounts and roles | ✅ | `/admin/users`: change role, activate/deactivate (roles: user, admin) |
+| FR15 | Data manager adds/updates/deletes articles | 🟡 | Knowledge base maintained by an idempotent loader script with change detection; no UI or data-manager role yet |
+
+### Non-functional requirements
+
+| ID | Requirement | Status |
+|---|---|---|
+| NFR1 | Response ≤ 10 s | ⚠️ Search < 2 s; full AI analysis 15–90 s on the free LLM tier (overload/fallbacks). Mitigated with a progress state |
+| NFR2 | Arabic RTL throughout | ✅ Website, PDFs and Word output |
+| NFR3 | 95% availability | ⚠️ Not measured (local deployment); automatic model fallback improves AI availability |
+| NFR4 | Sensitive data processed locally | 🔄 Changed by design: only masked text is sent to the LLM; text PDFs read locally; scans sent only with consent |
+| NFR5 | 50 concurrent users | ⚠️ Not load-tested yet |
+| NFR6 | Deployable on 16 GB RAM + 8 GB GPU | ✅ Exceeded: runs on a laptop with ~3.8 GB RAM and no GPU |
+| NFR7 | Modular, swappable LLM | ✅ Model and fallbacks configurable in `.env`; layered backend; replaceable UI |
+
+### Security requirements
+
+| ID | Status |
+|---|---|
+| SR1 bcrypt password hashing | ✅ (tested: stored value is a `$2b$` hash) |
+| SR2 sessions expire after 30 min of inactivity | ✅ 30-min tokens, refreshed only while the user is active |
+| SR3 no sensitive data to external APIs | 🔄 masked text only; scans only with consent (documented deviation) |
+| SR4 role-based access control | ✅ (tested: non-admin gets 403; users can't reach others' cases) |
+| SR5 daily knowledge-base backup | ❌ planned (scheduled `pg_dump`) |
+| SR6 scan uploads for malicious content | 🟡 file-signature check, size/page/dimension limits, encrypted PDFs and PDFs with embedded files rejected, files never stored; no antivirus engine |
+| SR7 anonymize before AI processing | ✅ for typed text and text PDFs; scans need consent |
+| SR8 placeholders such as [EMPLOYEE_1] | ✅ |
+| SR9 originals stored encrypted, owner/admin only | ✅ Fernet-encrypted vault per case (tested: no plain names in the database) |
+
+## End-to-end browser test (Day 5)
+
+Automated headless-browser run against the real Gemini API:
+1. signed-out visitor redirected to login
+2. register
+3. upload a contract PDF (read locally)
+4. analyze
+5. case page with real names restored
+6. My Cases
+7. rename
+8. download report PDF
+9. generate claim draft with party details, then download PDF + Word
+10. logout redirect
+11. admin promotes, deactivates and re-activates a user
+12. delete case
+
+Result: all steps passed, 0 browser errors. Backend: 41 automated tests (accounts, roles,
+ownership, encryption, masking, documents, claim, downloads, calculator) on a separate test
+database with the AI faked.
+
+## Additional challenges (Day 5)
+
+| # | Challenge | How we addressed it |
+|---|---|---|
+| 22 | Some PDF generators store Arabic ligatures out of order, so text extracted from them is garbled ("بين" → "بني") | Extracted text is always shown to the user for review; a "re-read with Gemini" option performs OCR instead |
+| 23 | Gemini refuses to transcribe **published** text verbatim (finish reason RECITATION), e.g. a scanned page of the regulations | Detected and reported with a clear message; users upload case-specific documents (contracts, letters), which transcribe correctly |
+| 24 | Users give **dates** ("since March 2019") rather than durations, and the model is not allowed to calculate, so amounts were left uncomputed | The model extracts start/end dates; code computes years of service as of the analysis date (verified: 7.52 years → 37,650 + 28,200 + 15,000 SAR) |
+| 25 | Short forms of a name ("خالد الغامدي" for "خالد سعد الغامدي", "الريادة" for "الريادة للمقاولات") escaped masking | Name variants are masked with the same placeholder; trade-off: short forms are shown back as the full name |
+| 26 | Requiring login changed every page's behavior | Central session handling: redirect to login and return to the original page; automatic logout on expiry |
+| 27 | Testing features that write to the database and call a paid/limited API | Separate `qistas_test` database and a fake Gemini in tests; real API used only for a small number of live checks |

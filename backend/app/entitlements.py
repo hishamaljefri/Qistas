@@ -10,6 +10,7 @@ is 8 hours (art. 98). "wage" means the actual wage incl. regular allowances
 (art. 2), unless the article says basic wage.
 """
 from dataclasses import dataclass
+from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -35,7 +36,9 @@ class EntitlementInputs(BaseModel):
     kind: EntitlementKind
     monthly_wage: float | None = Field(default=None, description="الأجر الفعلي الشهري شاملاً البدلات الثابتة، بالريال")
     basic_monthly_wage: float | None = Field(default=None, description="الأجر الأساسي الشهري إن ذُكر منفصلاً")
-    service_years: float | None = Field(default=None, description="مدة الخدمة بالسنوات (مثلاً 4.5)")
+    service_years: float | None = Field(default=None, description="مدة الخدمة بالسنوات إذا ذُكرت صراحةً كمدة (مثلاً 4.5)")
+    service_start_date: str | None = Field(default=None, description="تاريخ بداية الخدمة YYYY-MM-DD إن ذُكر")
+    service_end_date: str | None = Field(default=None, description="تاريخ انتهاء الخدمة YYYY-MM-DD إن ذُكر أو أمكن تحديده")
     contract_type: Literal["indefinite", "fixed"] | None = Field(default=None, description="غير محدد المدة / محدد المدة")
     remaining_contract_months: float | None = Field(default=None, description="المدة المتبقية من العقد المحدد بالأشهر")
     terminated_by: Literal["employer", "worker"] | None = Field(default=None, description="من أنهى العقد")
@@ -173,10 +176,35 @@ def damage_cap(wage: float) -> _Calc:
     return _Calc(_r(amount), f"أجر خمسة أيام في الشهر = {_fmt(wage)} ÷ 30 × 5 = {_fmt(amount)} ريال كحد أقصى شهرياً")
 
 
-def calculate(inp: EntitlementInputs) -> EntitlementResult:
+def _parse_date(value: str | None) -> date | None:
+    try:
+        return date.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
+def service_years_from_dates(inp: EntitlementInputs, as_of: date | None) -> tuple[float | None, str]:
+    """Years of service from the start/end dates the model extracted (date arithmetic is done here,
+    not by the model). Without an end date, service runs to as_of (the date of the analysis)."""
+    start = _parse_date(inp.service_start_date)
+    end = _parse_date(inp.service_end_date) or as_of
+    if start is None or end is None or end <= start:
+        return None, ""
+    years = round((end - start).days / 365.25, 2)
+    return years, f"مدة الخدمة من {start:%Y/%m/%d} إلى {end:%Y/%m/%d} ≈ {_fmt(years)} سنة؛ "
+
+
+def calculate(inp: EntitlementInputs, as_of: date | None = None) -> EntitlementResult:
     title, article = TITLES[inp.kind]
     wage = inp.monthly_wage or inp.basic_monthly_wage
     needed: dict[str, object] = {"monthly_wage": wage}
+    years_note = ""
+    uses_years = inp.kind == "end_of_service" or (
+        inp.kind == "unlawful_termination_compensation" and inp.contract_type == "indefinite"
+    )
+    if uses_years and inp.service_years is None:
+        years, years_note = service_years_from_dates(inp, as_of)
+        inp = inp.model_copy(update={"service_years": years})
 
     if inp.kind == "end_of_service":
         needed["service_years"] = inp.service_years
@@ -229,5 +257,25 @@ def calculate(inp: EntitlementInputs) -> EntitlementResult:
         formula += f"؛ ناقص ما دُفع {_fmt(inp.already_paid)} ← المتبقي {_fmt(remaining)} ريال"
         amount = remaining
     return EntitlementResult(
-        kind=inp.kind, title_ar=title, article=calc.article or article, amount=amount, formula_ar=formula
+        kind=inp.kind, title_ar=title, article=calc.article or article, amount=amount, formula_ar=years_note + formula
     )
+
+
+# Facts about the same employment that apply to every entitlement of a case.
+SHARED_FACTS = (
+    "monthly_wage", "basic_monthly_wage", "service_years", "service_start_date", "service_end_date", "contract_type",
+)
+
+
+def share_facts(items: list[EntitlementInputs]) -> list[EntitlementInputs]:
+    """The model sometimes states the wage or the service dates on only one entitlement
+    (e.g. on end-of-service but not on art. 77 compensation). They describe the same job,
+    so missing values are filled from the other entitlements of the same case."""
+    known = {}
+    for item in items:
+        for key in SHARED_FACTS:
+            if known.get(key) is None and getattr(item, key) is not None:
+                known[key] = getattr(item, key)
+    return [
+        item.model_copy(update={k: v for k, v in known.items() if getattr(item, k) is None}) for item in items
+    ]

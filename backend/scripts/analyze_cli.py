@@ -6,7 +6,7 @@ Usage (from backend/):
 import argparse
 import json
 
-from app.analysis import analyze_case
+from scripts._cli_user import analyze_case
 from app.schemas import AnalyzeRequest
 
 

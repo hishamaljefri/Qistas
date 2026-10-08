@@ -1,0 +1,40 @@
+<html><head><link rel="stylesheet" href="base.css"><style>
+body{width:1100px}
+.row{display:flex; gap:14px; align-items:stretch}
+.layer h3{margin:0 0 8px; font-size:16px}
+.mods{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+.mod{border:1.5px solid #1f5f4a; border-radius:8px; padding:8px 10px; background:#fff; font-size:13.5px}
+.mod b{display:block; font-size:14px; margin-bottom:2px}
+.user{background:#eef5f1} .api{background:#f4f8f6} .data{background:#f6f6f2}
+.ext{border:2px dashed #9a6b00; background:#fffaf0}
+.side{width:250px}
+</style></head><body>
+<div class="title">QISTAS system architecture</div>
+<div class="row">
+ <div style="flex:1">
+  <div class="layer user box"><h3>Presentation layer: Web browser</h3>
+   <div class="small">Next.js 16 + React + TypeScript, Arabic right-to-left GUI: case form, document upload, My Cases, case result, claim draft, law search, admin users</div></div>
+  <div class="arrow">⇅ <span class="small">HTTPS JSON (REST) · JWT bearer token</span></div>
+  <div class="layer api box"><h3>Application layer: FastAPI backend (Python 3.12)</h3>
+   <div class="mods">
+    <div class="mod"><b>Auth &amp; roles</b>bcrypt, 30-min JWT, user / admin</div>
+    <div class="mod"><b>Privacy layer</b>PII masking + Fernet-encrypted vault</div>
+    <div class="mod"><b>Document reader</b>PDF text layer (local) · OCR (consent)</div>
+    <div class="mod"><b>Retrieval</b>semantic search, article lookup, companion rules</div>
+    <div class="mod"><b>Legal analysis</b>prompt + JSON schema + grounding check</div>
+    <div class="mod"><b>Entitlement calculator</b>Labor-Law formulas in code</div>
+    <div class="mod"><b>Claim drafter</b>صحيفة دعوى, amounts by code</div>
+    <div class="mod"><b>Exporters</b>Arabic PDF (WeasyPrint) · Word (python-docx)</div>
+   </div></div>
+  <div class="arrow">⇅ <span class="small">SQLAlchemy · Alembic migrations</span></div>
+  <div class="layer data box"><h3>Data layer: PostgreSQL 18 + pgvector</h3>
+   <div class="small">Knowledge base: 7 legal sources · 497 provisions · 535 chunks with 768-d embeddings (HNSW index)<br>
+   Users · cases (masked text) · encrypted PII vault · analyses · documents (masked) · claims</div></div>
+ </div>
+ <div class="side" style="display:flex; flex-direction:column; gap:14px">
+  <div class="layer box ext"><h3 style="margin:0 0 6px;font-size:16px">External: Google Gemini API</h3>
+   <div class="small">gemini-embedding-001 (search vectors)<br>Gemini Flash family (analysis, claim, OCR) with automatic fallback<br><br><b>Receives masked text only</b>; scans only with user consent</div></div>
+  <div class="layer box" style="background:#f6f6f2"><h3 style="margin:0 0 6px;font-size:16px">Official sources</h3>
+   <div class="small">Labor Law (Bureau of Experts)<br>Implementing Regulations + annexes (HRSD)<br>→ verified, loaded by <i>load_kb</i> and embedded by <i>embed_kb</i></div></div>
+ </div>
+</div></body></html>

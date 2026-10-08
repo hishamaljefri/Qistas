@@ -55,10 +55,18 @@ class MaskResult:
 
 
 class _Masker:
-    def __init__(self) -> None:
+    def __init__(self, existing: dict[str, str] | None = None) -> None:
+        """existing: a previous placeholder -> value map (e.g. when a saved case is edited),
+        so the same person keeps the same placeholder and numbering continues."""
         self.mapping: dict[str, str] = {}
         self._by_value: dict[tuple[str, str], str] = {}
         self._counters: dict[str, int] = {}
+        for ph, value in (existing or {}).items():
+            kind, _, number = ph.strip("[]").rpartition("_")
+            self.mapping[ph] = value
+            self._by_value[(kind, value)] = ph
+            if number.isdigit():
+                self._counters[kind] = max(self._counters.get(kind, 0), int(number))
 
     def placeholder(self, kind: str, value: str) -> str:
         key = (kind, value)
@@ -70,13 +78,40 @@ class _Masker:
         return self._by_value[key]
 
     def replace_literal(self, text: str, value: str, kind: str) -> str:
+        """Replace a name and its short forms (first/last name, a company's first word)."""
         value = value.strip()
         if len(value) < 2:
             return text
-        # Arabic letters count as word characters, so \b-style guards work here;
-        # allow attached prefixes like و/ب/ل/ك/ال (e.g. "وشركة", "لمحمد").
-        pattern = re.compile(rf"(?<![\w])((?:[وبلكف]|ال)?){re.escape(value)}(?![\w])")
-        return pattern.sub(lambda m: m.group(1) + self.placeholder(kind, value), text)
+        ph = self.placeholder(kind, value)
+        for variant in _variants(kind, value):
+            text = _replace_word(text, variant, ph)
+        # "خالد الغامدي" -> "[EMPLOYEE_1] [EMPLOYEE_1]" -> "[EMPLOYEE_1]"
+        return re.sub(rf"{re.escape(ph)}(?:\s+{re.escape(ph)})+", ph, text)
+
+
+def _replace_word(text: str, value: str, placeholder: str) -> str:
+    # Arabic letters count as word characters, so \b-style guards work here;
+    # allow attached prefixes like و/ب/ل/ك/ال (e.g. "وشركة", "لمحمد").
+    pattern = re.compile(rf"(?<![\w])((?:[وبلكف]|ال)?){re.escape(value)}(?![\w])")
+    return pattern.sub(lambda m: m.group(1) + placeholder, text)
+
+
+# Common first words of company names that must not be masked on their own.
+_GENERIC_COMPANY_WORDS = {
+    "المتحدة", "الوطنية", "العربية", "السعودية", "الدولية", "العالمية", "الحديثة", "المتقدمة",
+    "الأولى", "الشرق", "الخليج", "مكتب", "مركز", "مصنع", "مؤسسة", "شركة",
+}
+
+
+def _variants(kind: str, value: str) -> list[str]:
+    """The full value first, then short forms people use in the same text."""
+    if kind in ("EMPLOYEE", "PERSON"):
+        return _name_parts(value)
+    if kind == "EMPLOYER":
+        words = value.split()
+        if len(words) > 1 and len(words[0]) >= 4 and words[0] not in _GENERIC_COMPANY_WORDS:
+            return [value, words[0]]
+    return [value]
 
 
 def _name_parts(full_name: str) -> list[str]:
@@ -92,10 +127,50 @@ def _name_parts(full_name: str) -> list[str]:
 def _trim_name(words: str) -> str:
     kept = []
     for w in words.split():
-        if w in _NOT_A_NAME:
+        # stop at a describing word, or at "و + word" after the name ("النخبة المتحدة والموظف")
+        if w in _NOT_A_NAME or (kept and w.startswith("و") and len(w) > 2):
             break
         kept.append(w)
     return " ".join(kept)
+
+
+def mask_many(
+    texts: list[str],
+    employee_name: str | None = None,
+    employer_name: str | None = None,
+    other_names: list[str] | None = None,
+    existing: dict[str, str] | None = None,
+) -> tuple[list[str], dict[str, str]]:
+    """Mask several texts (e.g. a case description and its attached documents) with one shared
+    numbering, so a company named in both becomes the same [EMPLOYER_1] everywhere."""
+    m = _Masker(existing)
+    texts = [t.translate(_ARABIC_DIGITS) for t in texts]
+
+    # 1. names the user gave us explicitly
+    for name, kind in [(employee_name, "EMPLOYEE"), (employer_name, "EMPLOYER")] + [
+        (n, "PERSON") for n in (other_names or [])
+    ]:
+        if not name or not name.strip():
+            continue
+        texts[:] = [m.replace_literal(t, " ".join(name.split()), kind) for t in texts]  # parts map to one placeholder
+
+    # 2. structured identifiers
+    for kind, pattern in _PATTERNS:
+        texts[:] = [pattern.sub(lambda mt, kind=kind: m.placeholder(kind, mt.group(0).strip()), t) for t in texts]
+    texts[:] = [_REFERENCE_NO.sub(lambda mt: mt.group(1) + m.placeholder("REFERENCE_NO", mt.group(2)), t) for t in texts]
+
+    # 3. company and person names introduced by a lead word ("شركة الأفق", "اسمي سعد"),
+    #    replaced in every text, not only the one where the lead word appeared
+    for lead, kind in [(_COMPANY_LEAD, "EMPLOYER"), (_PERSON_LEAD, "PERSON")]:
+        names = {_trim_name(found.group(1)) for t in texts for found in lead.finditer(t)}
+        for name in sorted((n for n in names if n and "[" not in n), key=len, reverse=True):
+            texts[:] = [m.replace_literal(t, name, kind) for t in texts]
+
+    # 4. values already known from an earlier version of this case (e.g. the user edits the text)
+    for ph, value in (existing or {}).items():
+        texts[:] = [m.replace_literal(t, value, ph.strip("[]").rpartition("_")[0]) for t in texts]
+
+    return texts, m.mapping
 
 
 def mask(
@@ -104,35 +179,8 @@ def mask(
     employer_name: str | None = None,
     other_names: list[str] | None = None,
 ) -> MaskResult:
-    m = _Masker()
-    text = text.translate(_ARABIC_DIGITS)
-
-    # 1. names the user gave us explicitly
-    for name, kind in [(employee_name, "EMPLOYEE"), (employer_name, "EMPLOYER")] + [
-        (n, "PERSON") for n in (other_names or [])
-    ]:
-        if not name or not name.strip():
-            continue
-        for part in _name_parts(name):
-            # map every part to the same placeholder as the full name
-            ph = m.placeholder(kind, " ".join(name.split()))
-            text = re.sub(
-                rf"(?<![\w])((?:[وبلكف]|ال)?){re.escape(part)}(?![\w])", lambda mt: mt.group(1) + ph, text
-            )
-
-    # 2. structured identifiers
-    for kind, pattern in _PATTERNS:
-        text = pattern.sub(lambda mt: m.placeholder(kind, mt.group(0).strip()), text)
-    text = _REFERENCE_NO.sub(lambda mt: mt.group(1) + m.placeholder("REFERENCE_NO", mt.group(2)), text)
-
-    # 3. company and person names introduced by a lead word ("شركة الأفق", "اسمي سعد")
-    for lead, kind in [(_COMPANY_LEAD, "EMPLOYER"), (_PERSON_LEAD, "PERSON")]:
-        for found in list(lead.finditer(text)):
-            name = _trim_name(found.group(1))
-            if name and "[" not in name:
-                text = m.replace_literal(text, name, kind)
-
-    return MaskResult(masked_text=text, mapping=m.mapping)
+    (masked,), mapping = mask_many([text], employee_name, employer_name, other_names)
+    return MaskResult(masked_text=masked, mapping=mapping)
 
 
 def unmask(value, mapping: dict[str, str]):

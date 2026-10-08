@@ -61,3 +61,30 @@ def test_overtime_rate_uses_basic_for_the_50_percent():  # art. 107
 def test_missing_inputs_are_reported_not_guessed():
     r = calculate(EntitlementInputs(kind="end_of_service", monthly_wage=8000))
     assert r.amount is None and r.missing_inputs == ["service_years"]
+
+
+def test_service_years_computed_from_dates_not_by_the_model():
+    from datetime import date
+
+    r = calculate(
+        EntitlementInputs(kind="end_of_service", monthly_wage=7500, service_start_date="2019-03-01", service_end_date="2025-03-01"),
+    )
+    assert r.amount == pytest.approx(7500 / 2 * 5 + 7500 * 1, rel=1e-3)  # 6 years
+    assert "2019/03/01" in r.formula_ar
+    ongoing = calculate(EntitlementInputs(kind="end_of_service", monthly_wage=6000, service_start_date="2020-01-01"), as_of=date(2022, 1, 1))
+    assert ongoing.amount == pytest.approx(6000, rel=1e-2)  # 2 years until the analysis date
+    bad = calculate(EntitlementInputs(kind="end_of_service", monthly_wage=6000, service_start_date="not a date"))
+    assert bad.amount is None and bad.missing_inputs == ["service_years"]
+
+
+def test_facts_stated_once_are_shared_across_entitlements():
+    from app.entitlements import share_facts
+
+    items = share_facts([
+        EntitlementInputs(kind="end_of_service", monthly_wage=7500, service_start_date="2019-03-01", service_end_date="2025-03-01"),
+        EntitlementInputs(kind="unlawful_termination_compensation", contract_type="indefinite"),
+        EntitlementInputs(kind="notice_compensation", terminated_by="employer"),
+    ])
+    results = [calculate(i) for i in items]
+    assert results[1].amount == pytest.approx(7500 / 30 * 15 * 6, rel=1e-3)  # art. 77 now computed
+    assert results[2].amount == 15000 and "مدة الخدمة" not in results[2].formula_ar  # no years note on notice pay

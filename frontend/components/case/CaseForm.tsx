@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/Field";
 import { Spinner } from "@/components/ui/Spinner";
+import { DocumentUpload } from "@/components/demo/DocumentUpload";
 import { text } from "@/lib/text";
-import type { AnalyzeRequest, Gender } from "@/lib/types";
+import type { AnalyzeRequest, AttachedDocument, Gender } from "@/lib/types";
 
 const t = text.form;
 
@@ -14,6 +15,7 @@ export function CaseForm({ onSubmit, loading }: { onSubmit: (req: AnalyzeRequest
   const [gender, setGender] = useState<Gender | "">("");
   const [employeeName, setEmployeeName] = useState("");
   const [employerName, setEmployerName] = useState("");
+  const [documents, setDocuments] = useState<AttachedDocument[]>([]);
   const tooShort = description.trim().length < 30;
 
   function submit(e: FormEvent) {
@@ -24,6 +26,7 @@ export function CaseForm({ onSubmit, loading }: { onSubmit: (req: AnalyzeRequest
       employee_gender: gender || null,
       employee_name: employeeName.trim() || null,
       employer_name: employerName.trim() || null,
+      documents: documents.filter((d) => d.text.trim()),
     });
   }
 
@@ -57,6 +60,8 @@ export function CaseForm({ onSubmit, loading }: { onSubmit: (req: AnalyzeRequest
             <TextInput id="employer" value={employerName} onChange={(e) => setEmployerName(e.target.value)} maxLength={200} />
           </Field>
         </div>
+
+        <DocumentUpload onChange={setDocuments} />
 
         <p className="text-sm text-muted">🔒 {t.privacyNote}</p>
 

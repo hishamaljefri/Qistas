@@ -10,7 +10,7 @@ import argparse
 import json
 from datetime import datetime
 
-from app.analysis import analyze_case
+from scripts._cli_user import analyze_case
 from app.config import DATA_DIR
 from app.schemas import AnalyzeRequest
 

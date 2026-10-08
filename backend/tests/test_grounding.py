@@ -4,6 +4,7 @@ from app.schemas import CitedArticle, ExpectedOutcome, LLMAnalysis
 
 def _analysis(ids):
     return LLMAnalysis(
+        title="",
         facts_summary="",
         legal_issues=[],
         applicable_articles=[CitedArticle(record_id=i, why="") for i in ids],

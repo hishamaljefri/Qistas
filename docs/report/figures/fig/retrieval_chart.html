@@ -1,0 +1,17 @@
+<html><head><link rel="stylesheet" href="base.css"><style>body{width:900px}</style></head><body>
+<div class="title">Retrieval accuracy on 37 Arabic test questions</div>
+<svg id="c" width="840" height="380"></svg>
+<script>
+const groups=[["Keyword (full-text)",[5,27,14]],["Semantic (embeddings)",[73,97,84]],["Semantic + article lookup",[78,100,88]],["+ source priority (final)",[95,100,97]]];
+const series=[["Hit@1 (%)","#1f5f4a"],["Hit@5 (%)","#5fb894"],["MRR × 100","#9a6b00"]];
+const svg=document.getElementById("c"), W=840,H=380,L=50,B=330,T=20, gw=(W-L-20)/groups.length, bw=40;
+let s="";
+for(let v=0;v<=100;v+=20){const y=B-(B-T)*v/100; s+=`<line x1="${L}" x2="${W-10}" y1="${y}" y2="${y}" stroke="#e5e5e0"/><text x="${L-8}" y="${y+4}" font-size="12" text-anchor="end" fill="#555">${v}</text>`;}
+groups.forEach(([name,vals],gi)=>{const x0=L+gi*gw+(gw-3*bw-10)/2;
+ vals.forEach((v,si)=>{const h=(B-T)*v/100,x=x0+si*(bw+5);
+  s+=`<rect x="${x}" y="${B-h}" width="${bw}" height="${h}" fill="${series[si][1]}" rx="3"/><text x="${x+bw/2}" y="${B-h-5}" font-size="12" text-anchor="middle" font-weight="700">${v}</text>`;});
+ s+=`<text x="${L+gi*gw+gw/2}" y="${B+20}" font-size="13" text-anchor="middle">${name}</text>`;});
+s+=`<line x1="${L}" x2="${W-10}" y1="${B}" y2="${B}" stroke="#333"/>`;
+series.forEach(([n,c],i)=>{s+=`<rect x="${L+10+i*170}" y="${H-18}" width="14" height="14" fill="${c}" rx="2"/><text x="${L+30+i*170}" y="${H-6}" font-size="13">${n}</text>`;});
+svg.innerHTML=s;
+</script></body></html>

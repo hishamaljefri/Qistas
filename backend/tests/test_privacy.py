@@ -42,3 +42,29 @@ def test_unmask_restores_nested_values():
     r = mask("اسمي سعد الحربي وجوالي 0501112223")
     restored = unmask({"a": [r.masked_text], "b": "اتصل على [PHONE_1]"}, r.mapping)
     assert "0501112223" in restored["b"] and "سعد الحربي" in restored["a"][0]
+
+
+def test_documents_share_numbering_with_description():
+    from app.privacy import mask_many
+
+    texts, mapping = mask_many(
+        ["أعمل في شركة النخبة المتحدة وجوالي 0551234567", "عقد عمل بين شركة النخبة المتحدة والموظف"]
+    )
+    assert all("[EMPLOYER_1]" in t and "النخبة" not in t for t in texts)
+    assert mapping["[EMPLOYER_1]"] == "النخبة المتحدة"
+
+
+def test_edited_case_keeps_existing_placeholders():
+    from app.privacy import mask_many
+
+    _, first = mask_many(["اسمي سعد الحربي وجوالي 0501112223"], employee_name="سعد الحربي")
+    (edited,), second = mask_many(["سعد الحربي يضيف: جوالي الجديد 0559999999"], existing=first)
+    assert "[EMPLOYEE_1]" in edited and "[PHONE_2]" in edited
+    assert second["[PHONE_1]"] == "0501112223" and second["[PHONE_2]"] == "0559999999"
+
+
+def test_short_form_of_a_known_name_is_masked_once():
+    from app.privacy import mask_many
+
+    (masked,), _ = mask_many(["خالد الغامدي يعمل لدى الريادة"], existing={"[EMPLOYEE_1]": "خالد سعد الغامدي", "[EMPLOYER_1]": "الريادة للمقاولات"})
+    assert masked == "[EMPLOYEE_1] يعمل لدى [EMPLOYER_1]"

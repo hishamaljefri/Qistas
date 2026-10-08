@@ -1,0 +1,32 @@
+<html><head><link rel="stylesheet" href="base.css"><style>
+body{width:1100px}
+.flow{display:grid; grid-template-columns:repeat(5,1fr); gap:12px 26px; position:relative}
+.step{border:2px solid #1f5f4a; border-radius:10px; padding:10px 12px; background:#f4f8f6; font-size:13px; position:relative; min-height:118px}
+.step b{display:block; font-size:14.5px; margin-bottom:4px; color:#1f5f4a}
+.n{position:absolute; top:-12px; right:-10px; background:#1f5f4a; color:#fff; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px}
+.step:not(.last-in-row)::after{content:"➜"; position:absolute; left:calc(100% + 4px); top:42%; color:#1f5f4a; font-size:20px}
+.ai{background:#fffaf0; border-color:#9a6b00} .ai b{color:#9a6b00}
+.code{background:#eef5f1}
+.legend{margin-top:16px; font-size:13px; display:flex; gap:20px}
+.sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:5px; border:1.5px solid}
+.down{grid-column:5; text-align:center; font-size:20px; color:#1f5f4a; margin:-6px 0}
+</style></head><body>
+<div class="title">Case analysis pipeline (one request)</div>
+<div class="flow">
+ <div class="step"><span class="n">1</span><b>Input</b>Arabic case description, gender, optional names, reviewed document text</div>
+ <div class="step code"><span class="n">2</span><b>Mask personal data</b>names, IDs, phones, IBAN, e-mail, company names → [EMPLOYEE_1]…</div>
+ <div class="step ai"><span class="n">3</span><b>Retrieve</b>question embedding (Gemini) → top-8 chunks (pgvector) + explicit article numbers</div>
+ <div class="step code"><span class="n">4</span><b>Expand</b>companion rules (e.g. dismissal → art. 84, 88, 111, 64) + linked regulations</div>
+ <div class="step ai last-in-row"><span class="n">5</span><b>Generate</b>Gemini Flash, strict prompt, JSON schema: facts, issues, citations, outcome, missing info, entitlement inputs</div>
+ <div class="down" style="grid-column:5">⬇</div>
+</div>
+<div class="flow" style="direction:rtl">
+ <div class="step code" style="direction:ltr"><span class="n">6</span><b>Grounding check</b>citations not in the retrieved set are removed and reported</div>
+ <div class="step code" style="direction:ltr"><span class="n">7</span><b>Calculate</b>end-of-service, art. 77, notice, overtime, injury… computed in code from extracted facts</div>
+ <div class="step code" style="direction:ltr"><span class="n">8</span><b>Save</b>masked text + result; real values in Fernet-encrypted vault</div>
+ <div class="step code" style="direction:ltr"><span class="n">9</span><b>Restore for owner</b>placeholders → real names, only in the owner's view</div>
+ <div class="step last-in-row" style="direction:ltr; background:#fff"><span class="n">10</span><b>Outputs</b>result page · My Cases · report PDF · claim draft (PDF / Word)</div>
+</div>
+<div class="legend"><span><span class="sw" style="background:#eef5f1;border-color:#1f5f4a"></span>runs on our server (no data leaves)</span><span><span class="sw" style="background:#fffaf0;border-color:#9a6b00"></span>calls Gemini with masked text only</span></div>
+<style>.flow[style*="rtl"] .step:not(.last-in-row)::after{content:"⬅"; left:auto; right:calc(100% + 4px)} .flow[style*="rtl"] .step.last-in-row::after{content:""}</style>
+</body></html>

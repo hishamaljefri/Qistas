@@ -6,10 +6,15 @@ legal_provisions   one row per article / item, with its legal status
                    (in force, repealed, merged into another article).
 provision_chunks   the searchable pieces of each provision. Short provisions
                    are one chunk; long ones are split. Embeddings live here.
-cases              a case description submitted by a user, stored MASKED only
-                   (names / IDs replaced by placeholders; originals never stored).
+users              accounts (bcrypt password hashes) with a role: user | admin.
+cases              a case submitted by a user. Text is stored MASKED (names / IDs
+                   replaced by placeholders); the real values are kept separately,
+                   encrypted, in pii_vault (CS498 SR9) and only decrypted for the owner.
 case_analyses      each AI analysis of a case: what was retrieved, which model
                    answered, the structured result and how long it took.
+case_documents     text extracted from documents attached to a case (masked).
+                   The uploaded files themselves are not stored.
+case_claims        generated Statement of Claim drafts (masked) for a case.
 """
 from datetime import date, datetime
 
@@ -22,6 +27,7 @@ from sqlalchemy import (
     Index,
     Integer,
     String,
+    Boolean,
     Text,
     UniqueConstraint,
     func,
@@ -114,16 +120,46 @@ class ProvisionChunk(Base):
     provision: Mapped[LegalProvision] = relationship(back_populates="chunks")
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(32), unique=True)  # stored lowercase
+    email: Mapped[str] = mapped_column(String(254), unique=True)  # stored lowercase
+    password_hash: Mapped[str] = mapped_column(String(100))  # bcrypt (SR1)
+    role: Mapped[str] = mapped_column(String(10), default="user")  # user | admin
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    cases: Mapped[list["Case"]] = relationship(back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
+
+
 class Case(Base):
     __tablename__ = "cases"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Nullable: cases created before accounts existed have no owner (visible to admins only).
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str | None] = mapped_column(Text)  # masked, like the description
     masked_description: Mapped[str] = mapped_column(Text)
+    employee_gender: Mapped[str | None] = mapped_column(String(6))  # male | female
     pii_counts: Mapped[dict] = mapped_column(JSONB, default=dict)  # e.g. {"NATIONAL_ID": 1}
+    pii_vault: Mapped[str | None] = mapped_column(Text)  # Fernet-encrypted {placeholder: real value}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
+    user: Mapped[User | None] = relationship(back_populates="cases")
     analyses: Mapped[list["CaseAnalysis"]] = relationship(
-        back_populates="case", cascade="all, delete-orphan", order_by="CaseAnalysis.id"
+        back_populates="case", cascade="all, delete-orphan", order_by="CaseAnalysis.id", passive_deletes=True
+    )
+    documents: Mapped[list["CaseDocument"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan", order_by="CaseDocument.id", passive_deletes=True
+    )
+    claims: Mapped[list["CaseClaim"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan", order_by="CaseClaim.id", passive_deletes=True
     )
 
 
@@ -142,3 +178,32 @@ class CaseAnalysis(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     case: Mapped[Case] = relationship(back_populates="analyses")
+
+
+class CaseDocument(Base):
+    __tablename__ = "case_documents"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"), index=True)
+    filename: Mapped[str] = mapped_column(Text)  # masked
+    method: Mapped[str] = mapped_column(String(20))  # text_layer | gemini_ocr
+    pages: Mapped[int | None] = mapped_column(Integer)
+    masked_text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    case: Mapped[Case] = relationship(back_populates="documents")
+
+
+class CaseClaim(Base):
+    __tablename__ = "case_claims"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"), index=True)
+    prompt_version: Mapped[str] = mapped_column(String(20))
+    model_version: Mapped[str | None] = mapped_column(String(100))
+    result: Mapped[dict] = mapped_column(JSONB)  # masked; same shape as schemas.LLMClaim
+    party_vault: Mapped[str | None] = mapped_column(Text)  # Fernet-encrypted party details (never sent to the LLM)
+    grounding_warnings: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    case: Mapped[Case] = relationship(back_populates="claims")
