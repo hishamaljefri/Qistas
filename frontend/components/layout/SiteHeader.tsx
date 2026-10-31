@@ -9,7 +9,7 @@ import { text } from "@/lib/text";
 
 const t = text.nav;
 
-/** Logo, main links (active one highlighted), login state. Below 768px the links move into a menu. */
+/** Logo, main links (active one highlighted), login state. Below 1024px the links move into a menu. */
 export function SiteHeader() {
   const { hydrated, session, logout } = useAuth();
   const pathname = usePathname();
@@ -21,7 +21,12 @@ export function SiteHeader() {
     { href: "/", label: t.analyze, active: pathname === "/" },
     { href: "/search", label: t.search, active: pathname.startsWith("/search") || pathname.startsWith("/articles") },
     ...(signedIn ? [{ href: "/cases", label: t.myCases, active: pathname.startsWith("/cases") }] : []),
-    ...(signedIn && session.user.role === "admin" ? [{ href: "/admin/users", label: t.admin, active: pathname.startsWith("/admin") }] : []),
+    ...(signedIn && session.user.role === "admin"
+      ? [
+          { href: "/admin/users", label: t.admin, active: pathname.startsWith("/admin/users") },
+          { href: "/admin/law", label: t.law, active: pathname.startsWith("/admin/law") },
+        ]
+      : []),
   ];
   const signOut = () => {
     setOpen(false);
@@ -56,7 +61,7 @@ export function SiteHeader() {
     <header className="relative border-b border-line bg-surface">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-6 py-3 max-md:px-4">
         <Wordmark />
-        <nav aria-label={t.label} className="flex items-center gap-1 max-md:hidden">
+        <nav aria-label={t.label} className="flex items-center gap-1 max-lg:hidden">
           {links.map((l) => (
             <Link key={l.href} href={l.href} aria-current={l.active ? "page" : undefined} className={linkClass(l.active)}>
               {l.label}
@@ -71,13 +76,13 @@ export function SiteHeader() {
           aria-controls="mobile-menu"
           aria-label={open ? t.closeMenu : t.openMenu}
           onClick={() => setOpen(!open)}
-          className="flex size-11 items-center justify-center rounded-control border border-line bg-surface text-text md:hidden"
+          className="flex size-11 items-center justify-center rounded-control border border-line bg-surface text-text lg:hidden"
         >
           <Icon name={open ? "close" : "menu"} className="size-[22px]" />
         </button>
       </div>
       {open && (
-        <nav id="mobile-menu" aria-label={t.label} className="absolute inset-x-0 top-full z-20 flex flex-col gap-1 border-b border-line bg-surface px-4 pt-2 pb-4 shadow-card md:hidden">
+        <nav id="mobile-menu" aria-label={t.label} className="absolute inset-x-0 top-full z-20 flex flex-col gap-1 border-b border-line bg-surface px-4 pt-2 pb-4 shadow-card lg:hidden">
           {links.map((l) => (
             <Link key={l.href} href={l.href} onClick={() => setOpen(false)} aria-current={l.active ? "page" : undefined} className={linkClass(l.active)}>
               {l.label}

@@ -13,7 +13,7 @@ from sqlalchemy import func, select, text
 from app.config import CORS_ORIGINS
 from app.db import SessionLocal
 from app.models import LegalProvision, LegalSource
-from app.routes import admin, auth, cases, documents
+from app.routes import admin, auth, cases, documents, law
 from app.schemas import ArticleOut, KBInfo, SearchHit, SourceOut
 from app.search import search
 
@@ -35,6 +35,7 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(cases.router)
 app.include_router(documents.router)
+app.include_router(law.router)
 
 # Public endpoints below: the law itself is public text, so search/articles need no login.
 

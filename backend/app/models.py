@@ -6,6 +6,8 @@ legal_provisions   one row per article / item, with its legal status
                    (in force, repealed, merged into another article).
 provision_chunks   the searchable pieces of each provision. Short provisions
                    are one chunk; long ones are split. Embeddings live here.
+provision_revisions  history of changes made to provisions in the website (FR15): who changed
+                   what, when and why, with the values before and after.
 users              accounts (bcrypt password hashes) with a role: user | admin.
 cases              a case submitted by a user. Text is stored MASKED (names / IDs
                    replaced by placeholders); the real values are kept separately,
@@ -118,6 +120,24 @@ class ProvisionChunk(Base):
     embedding_model: Mapped[str | None] = mapped_column(String(100))
 
     provision: Mapped[LegalProvision] = relationship(back_populates="chunks")
+
+
+class ProvisionRevision(Base):
+    """One change to a provision made in the law-management page (FR15)."""
+
+    __tablename__ = "provision_revisions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    provision_id: Mapped[int] = mapped_column(ForeignKey("legal_provisions.id", ondelete="CASCADE"), index=True)
+    action: Mapped[str] = mapped_column(String(10))  # create | update
+    # the changed fields only: {"status": ["in_force", "repealed"], ...}; for "create", [null, value]
+    changes: Mapped[dict] = mapped_column(JSONB)
+    reason: Mapped[str] = mapped_column(Text)  # e.g. the decree that amended the article
+    changed_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    changed_by_name: Mapped[str] = mapped_column(String(32))  # kept if the account is later deleted
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    provision: Mapped[LegalProvision] = relationship()
 
 
 class User(Base):

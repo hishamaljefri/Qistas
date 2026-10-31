@@ -10,6 +10,11 @@ import type {
   Claim,
   ClaimRequest,
   KBInfo,
+  LawCreate,
+  LawPage,
+  LawProvision,
+  LawSource,
+  LawUpdate,
   ReanalyzeRequest,
   Role,
   SearchHit,
@@ -104,6 +109,19 @@ export const api = {
   // admin
   adminUsers: () => json<AdminUser[]>("/api/admin/users"),
   adminUpdateUser: (id: number, body: { role?: Role; is_active?: boolean }) => patch<User>(`/api/admin/users/${id}`, body),
+
+  // law management (admin)
+  lawSources: () => json<LawSource[]>("/api/law/sources"),
+  lawProvisions: (filters: { q?: string; source?: string; status?: string; offset?: number }) => {
+    const params = new URLSearchParams(
+      Object.entries(filters).flatMap(([k, v]) => (v === undefined || v === "" ? [] : [[k, String(v)]])),
+    );
+    return json<LawPage>(`/api/law/provisions?${params}`);
+  },
+  lawProvision: (recordId: string) => json<LawProvision>(`/api/law/provisions/${encodeURIComponent(recordId)}`),
+  updateLawProvision: (recordId: string, body: LawUpdate) => patch<LawProvision>(`/api/law/provisions/${encodeURIComponent(recordId)}`, body),
+  createLawProvision: (body: LawCreate) => post<LawProvision>("/api/law/provisions", body),
+  reindexLawProvision: (recordId: string) => post<LawProvision>(`/api/law/provisions/${encodeURIComponent(recordId)}/reindex`),
 
   // public law data
   search: (q: string, k = 10) => json<SearchHit[]>(`/api/search?${new URLSearchParams({ q, k: String(k) })}`),

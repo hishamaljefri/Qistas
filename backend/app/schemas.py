@@ -274,3 +274,69 @@ class ClaimOut(BaseModel):
     notes: list[str]
     grounding_warnings: list[str]
     disclaimer: str
+
+
+# ---------- law management (FR15) ----------
+
+ProvisionStatus = Literal["in_force", "repealed", "merged"]
+
+
+class LawSourceOut(BaseModel):
+    code: str
+    name_ar: str
+    provisions: int
+
+
+class LawRow(BaseModel):
+    record_id: str
+    source_code: str
+    source_name: str
+    article_number: str | None
+    title: str
+    status: ProvisionStatus
+    revisions: int = Field(description="عدد التعديلات التي أُجريت على المادة من الموقع")
+    last_changed_at: datetime | None
+
+
+class LawPage(BaseModel):
+    total: int
+    items: list[LawRow]
+
+
+class LawRevisionOut(BaseModel):
+    action: Literal["create", "update"]
+    changes: dict[str, list[str | None]] = Field(description="الحقل المعدّل: [القيمة السابقة، القيمة الجديدة]")
+    reason: str
+    changed_by: str
+    changed_at: datetime
+
+
+class LawProvisionOut(LawRow):
+    content_type: str
+    hierarchy: str | None
+    text: str
+    status_note: str | None
+    searchable: bool = Field(description="هل لكل أجزاء المادة متجهات بحث (embeddings)")
+    history: list[LawRevisionOut]
+
+
+class LawProvisionUpdate(BaseModel):
+    """Only the fields sent are changed; an empty article number or note clears it."""
+
+    title: str | None = Field(default=None, min_length=2, max_length=300)
+    article_number: str | None = Field(default=None, max_length=20)
+    text: str | None = Field(default=None, min_length=5, max_length=50000)
+    status: ProvisionStatus | None = None
+    status_note: str | None = Field(default=None, max_length=1000)
+    reason: str = Field(min_length=5, max_length=500, description="سبب التعديل، مثل رقم المرسوم أو القرار وتاريخه")
+
+
+class LawProvisionCreate(BaseModel):
+    source_code: str
+    article_number: str | None = Field(default=None, max_length=20)
+    title: str = Field(min_length=2, max_length=300)
+    hierarchy: str | None = Field(default=None, max_length=300)
+    text: str = Field(min_length=5, max_length=50000)
+    status: ProvisionStatus = "in_force"
+    status_note: str | None = Field(default=None, max_length=1000)
+    reason: str = Field(min_length=5, max_length=500)

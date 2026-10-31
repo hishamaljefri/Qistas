@@ -171,3 +171,65 @@ export interface Claim {
   grounding_warnings: string[];
   disclaimer: string;
 }
+
+// ---------- law management (admin, FR15) ----------
+
+export interface LawSource {
+  code: string;
+  name_ar: string;
+  provisions: number;
+}
+
+export interface LawRow {
+  record_id: string;
+  source_code: string;
+  source_name: string;
+  article_number: string | null;
+  title: string;
+  status: ProvisionStatus;
+  revisions: number;
+  last_changed_at: string | null;
+}
+
+export interface LawPage {
+  total: number;
+  items: LawRow[];
+}
+
+export interface LawRevision {
+  action: "create" | "update";
+  changes: Record<string, [string | null, string | null]>; // field -> [before, after]
+  reason: string;
+  changed_by: string;
+  changed_at: string;
+}
+
+export interface LawProvision extends LawRow {
+  content_type: string;
+  hierarchy: string | null;
+  text: string;
+  status_note: string | null;
+  searchable: boolean; // every chunk has its embedding
+  history: LawRevision[];
+}
+
+/** Only the fields sent are changed; "" clears the article number or the note. */
+export interface LawUpdate {
+  title?: string;
+  article_number?: string;
+  text?: string;
+  status?: ProvisionStatus;
+  status_note?: string;
+  reason: string;
+}
+
+export interface LawCreate {
+  source_code: string;
+  article_number?: string | null;
+  title: string;
+  hierarchy?: string | null;
+  text: string;
+  status: ProvisionStatus;
+  status_note?: string | null;
+  reason: string;
+}

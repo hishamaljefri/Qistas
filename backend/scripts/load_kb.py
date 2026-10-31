@@ -11,7 +11,6 @@ chunks are rebuilt only when its text changed (so existing embeddings are kept).
 
 Usage (from backend/):  uv run python -m scripts.load_kb
 """
-import hashlib
 import json
 import re
 from datetime import date
@@ -19,10 +18,10 @@ from datetime import date
 from sqlalchemy import select
 
 from app.arabic import normalize
-from app.chunking import build_header, split_text
 from app.config import DATA_DIR
 from app.db import SessionLocal
-from app.models import LegalProvision, LegalSource, ProvisionChunk
+from app.kb import STATUS_LABELS, build_chunks, text_hash
+from app.models import LegalProvision, LegalSource
 
 KB_FILE = DATA_DIR / "kb" / "QISTAS_Legal_Knowledge_Base_RAG.jsonl"
 SOURCES_FILE = DATA_DIR / "kb" / "sources.json"
@@ -33,12 +32,7 @@ VIOLATIONS_GROUP = "جدول المخالفات والعقوبات"
 SECTION_CODES = {"أ": "A", "ب": "B", "ج": "C", "د": "D", "ه": "E", "و": "F", "ز": "G", "ح": "H", "ط": "I", "ي": "J", "ك": "K", "ل": "L", "م": "M"}
 ORDINALS = ("أولاً", "ثانياً", "ثالثاً", "رابعاً", "خامساً", "سادساً", "سابعاً", "ثامناً", "تاسعاً", "عاشراً", "أحد عشر")
 
-STATUS_LABELS = {"repealed": "ملغاة", "merged": "مدمجة في مادة أخرى"}
 RECORD_PREFIX = {"LABOR_LAW": "LAW", "IMPL_REG": "REG"}
-
-
-def sha256(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def split_list(value: str) -> list[str]:
@@ -219,19 +213,20 @@ def main() -> None:
 
         for row in rows:
             source = sources[row.pop("group")]
-            text_hash = sha256(row["text_ar"])
+            new_hash = text_hash(row["text_ar"])
             provision = existing.get(row["record_id"])
 
             if provision is None:
-                provision = LegalProvision(source=source, text_hash=text_hash, **row)
+                provision = LegalProvision(source=source, text_hash=new_hash, **row)
                 session.add(provision)
                 created += 1
-            elif provision.text_hash != text_hash or provision.title_ar != row["title_ar"]:
+            elif provision.text_hash != new_hash or provision.title_ar != row["title_ar"]:
                 for key, value in row.items():
                     setattr(provision, key, value)
                 provision.source = source
-                provision.text_hash = text_hash
+                provision.text_hash = new_hash
                 provision.chunks.clear()  # text changed -> rebuild chunks/embeddings
+                session.flush()  # old chunks deleted before new ones reuse their chunk_index
                 updated += 1
             else:
                 for key in (
@@ -241,16 +236,7 @@ def main() -> None:
                 unchanged += 1
 
             if not provision.chunks:
-                header = build_header(
-                    source.name_ar,
-                    provision.title_ar,
-                    provision.hierarchy,
-                    STATUS_LABELS.get(provision.status),
-                )
-                provision.chunks = [
-                    ProvisionChunk(chunk_index=i, retrieval_text=f"{header}\nالنص: {body}")
-                    for i, body in enumerate(split_text(provision.text_ar))
-                ]
+                provision.chunks = build_chunks(provision, source.name_ar)
             for chunk in provision.chunks:
                 if chunk.search_text is None:
                     chunk.search_text = normalize(chunk.retrieval_text)
