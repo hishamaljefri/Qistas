@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select, text
 
+from app.config import CORS_ORIGINS
 from app.db import SessionLocal
 from app.models import LegalProvision, LegalSource
 from app.routes import admin, auth, cases, documents
@@ -25,7 +26,7 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Next.js dev server
+    allow_origins=CORS_ORIGINS,  # the website (Next.js dev server locally, Vercel when deployed)
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["Content-Disposition"],  # lets the browser read download file names

@@ -9,7 +9,13 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 load_dotenv(PROJECT_ROOT / ".env")
 
-DATABASE_URL = os.environ["DATABASE_URL"].replace("postgresql://", "postgresql+psycopg://", 1)
+# Local Postgres or Neon (hosted); both URL spellings are accepted.
+DATABASE_URL = (
+    os.environ["DATABASE_URL"].replace("postgresql://", "postgresql+psycopg://", 1).replace("postgres://", "postgresql+psycopg://", 1)
+)
+# Websites allowed to call the API from the browser (comma-separated). On the server this is the
+# deployed website's address, e.g. https://qistas.vercel.app; locally it is the Next.js dev server.
+CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()]
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 # Alias that tracks Google's current Flash model; the concrete version used is
 # saved with every analysis (case_analyses.model_version).

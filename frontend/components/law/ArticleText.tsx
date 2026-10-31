@@ -1,4 +1,4 @@
 // Law text keeps its original line breaks (numbered paragraphs).
-export function ArticleText({ children }: { children: string }) {
-  return <p className="whitespace-pre-line leading-8">{children}</p>;
+export function ArticleText({ children, className = "" }: { children: string; className?: string }) {
+  return <p className={`max-w-[75ch] whitespace-pre-line ${className}`}>{children}</p>;
 }

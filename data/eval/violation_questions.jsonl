@@ -1,0 +1,11 @@
+{"id": "V01", "question": "كم غرامة تشغيل عامل أجنبي بدون رخصة عمل؟", "expected_record_ids": ["VIO-A-020"], "topic": "work permit"}
+{"id": "V02", "question": "ما عقوبة صاحب العمل إذا احتفظ بجواز سفري؟", "expected_record_ids": ["VIO-A-031", "VIO-J-012", "VIO-K-010"], "topic": "passport"}
+{"id": "V03", "question": "الشركة لا تصرف الرواتب في موعدها، هل عليها غرامة؟", "expected_record_ids": ["VIO-A-039", "VIO-A-036"], "topic": "wages"}
+{"id": "V04", "question": "هل يغرم صاحب العمل إذا رفض إعطائي شهادة الخدمة بعد انتهاء العقد؟", "expected_record_ids": ["VIO-A-037"], "topic": "service certificate"}
+{"id": "V05", "question": "ما غرامة تشغيل الأطفال تحت 15 سنة؟", "expected_record_ids": ["VIO-A-009"], "topic": "child labor"}
+{"id": "V06", "question": "صاحب العمل لا يعطينا راحة أسبوعية ويشغلنا ساعات زائدة، ما المخالفة عليه؟", "expected_record_ids": ["VIO-A-041"], "topic": "rest"}
+{"id": "V07", "question": "العاملة المنزلية لم تستلم راتبها، كم الغرامة على صاحب المنزل؟", "expected_record_ids": ["VIO-J-002"], "topic": "domestic wages"}
+{"id": "V08", "question": "ما عقوبة استقدام عامل منزلي بدون وجود عمل له؟", "expected_record_ids": ["VIO-J-016"], "topic": "domestic visa"}
+{"id": "V09", "question": "خلال كم يوم يجب سداد غرامة وزارة الموارد البشرية بعد التبليغ؟", "expected_record_ids": ["VIO-CLAUSE-04"], "topic": "payment period"}
+{"id": "V10", "question": "هل يمكن لصاحب العمل الاعتراض على غرامة المخالفة؟", "expected_record_ids": ["VIO-CLAUSE-03"], "topic": "objection"}
+{"id": "V11", "question": "صاحب العمل لم يوفر لي تأمين طبي، هل هذه مخالفة لها غرامة؟", "expected_record_ids": ["VIO-A-008"], "topic": "medical insurance"}

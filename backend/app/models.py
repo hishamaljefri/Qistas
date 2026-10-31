@@ -45,7 +45,7 @@ class LegalSource(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(40), unique=True)  # e.g. LABOR_LAW
     name_ar: Mapped[str] = mapped_column(Text)
-    legal_level: Mapped[str] = mapped_column(String(20))  # law | regulation | annex | guidance
+    legal_level: Mapped[str] = mapped_column(String(20))  # law | regulation | annex | decision | guidance
     authority: Mapped[str] = mapped_column(Text)
     issuing_instrument: Mapped[str | None] = mapped_column(Text)  # e.g. royal decree number
     source_url: Mapped[str | None] = mapped_column(Text)

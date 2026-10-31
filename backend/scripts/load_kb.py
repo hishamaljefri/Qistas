@@ -4,6 +4,7 @@ Reads:
   data/kb/QISTAS_Legal_Knowledge_Base_RAG.jsonl   the provisions
   data/kb/sources.json                            metadata per source document
   data/kb/status_notes.json                       repealed / merged articles
+  data/kb/violations_112377.json                  violations and penalties table (if present)
 
 Safe to run repeatedly: provisions are matched by record_id, and a provision's
 chunks are rebuilt only when its text changed (so existing embeddings are kept).
@@ -26,6 +27,11 @@ from app.models import LegalProvision, LegalSource, ProvisionChunk
 KB_FILE = DATA_DIR / "kb" / "QISTAS_Legal_Knowledge_Base_RAG.jsonl"
 SOURCES_FILE = DATA_DIR / "kb" / "sources.json"
 STATUS_FILE = DATA_DIR / "kb" / "status_notes.json"
+VIOLATIONS_FILE = DATA_DIR / "kb" / "violations_112377.json"
+VIOLATIONS_GROUP = "جدول المخالفات والعقوبات"
+# Arabic section letters of the table -> ASCII codes for record ids (VIO-A-020)
+SECTION_CODES = {"أ": "A", "ب": "B", "ج": "C", "د": "D", "ه": "E", "و": "F", "ز": "G", "ح": "H", "ط": "I", "ي": "J", "ك": "K", "ل": "L", "م": "M"}
+ORDINALS = ("أولاً", "ثانياً", "ثالثاً", "رابعاً", "خامساً", "سادساً", "سابعاً", "ثامناً", "تاسعاً", "عاشراً", "أحد عشر")
 
 STATUS_LABELS = {"repealed": "ملغاة", "merged": "مدمجة في مادة أخرى"}
 RECORD_PREFIX = {"LABOR_LAW": "LAW", "IMPL_REG": "REG"}
@@ -61,6 +67,67 @@ def upsert_sources(session, sources_meta: dict) -> dict[str, LegalSource]:
         by_group[group] = source
     session.flush()
     return by_group
+
+
+def violation_rows(data: dict) -> list[dict]:
+    """One provision per violation (VIO-A-020) and per numbered clause of the decision (VIO-CLAUSE-02).
+
+    Fines in this table are paid to the state by the violator; they are not money owed to the worker.
+    """
+    titles = {s["letter"].replace("ـ", "").strip(): s["title"] for s in data["sections"]}
+    order = {letter: i for i, letter in enumerate(titles)}
+    rows = []
+    for r in data["rows"]:
+        letter = r["section"].replace("ـ", "").strip()
+        lines = [r["description"].strip()]
+        if r.get("classification"):
+            lines.append(f"تصنيف المخالفة: {r['classification']}")
+        lines += [f"{p['column']}: {p['value']}" for p in r["penalties"]]
+        if r.get("notes"):
+            lines.append(f"ملاحظات: {r['notes']}")
+        rows.append(
+            {
+                "group": VIOLATIONS_GROUP,
+                "record_id": f"VIO-{SECTION_CODES[letter]}-{r['number']:03d}",
+                "content_type": "جدول مخالفات",
+                "article_number": None,
+                "sort_order": order[letter] * 1000 + r["number"],
+                "title_ar": f"المخالفة رقم ({r['number']}) من الفئة ({letter})",
+                "hierarchy": " | ".join(x for x in (f"({letter}) {titles[letter]}", r.get("subsection")) if x),
+                "text_ar": "\n".join(lines),
+                "keywords": [],
+                "related_record_ids": [],
+                "status": "in_force",
+                "status_note": None,
+                "page_start": r["page"],
+                "page_end": r["page"],
+            }
+        )
+    for p in data["paragraphs"]:
+        text = p["text"].strip()
+        ordinal = next((o for o in ORDINALS if text.startswith(o)), None)
+        if ordinal is None:
+            continue  # title, preamble, signature
+        n = ORDINALS.index(ordinal) + 1
+        rows.append(
+            {
+                "group": VIOLATIONS_GROUP,
+                "record_id": f"VIO-CLAUSE-{n:02d}",
+                "content_type": "حكم من القرار",
+                "article_number": None,
+                "sort_order": 100 + n,
+                "title_ar": f"القرار الوزاري (112377): البند {ordinal}",
+                "hierarchy": None,
+                "text_ar": text,
+                "keywords": [],
+                "related_record_ids": [],
+                "status": "in_force",
+                "status_note": None,
+                "page_start": p["page"],
+                "page_end": p["page"],
+            }
+        )
+    return rows
 
 
 def provision_rows(sources_meta: dict, status_notes: dict) -> list[dict]:
@@ -139,6 +206,11 @@ def main() -> None:
     sources_meta = json.loads(SOURCES_FILE.read_text(encoding="utf-8"))["sources"]
     status_notes = json.loads(STATUS_FILE.read_text(encoding="utf-8"))
     rows = provision_rows(sources_meta, status_notes)
+    if VIOLATIONS_FILE.exists():
+        violations = json.loads(VIOLATIONS_FILE.read_text(encoding="utf-8"))
+        if not violations.get("review", {}).get("team_review_done"):
+            print("note: the violations table is waiting for the team's review against the PDF")
+        rows += violation_rows(violations)
 
     created = updated = unchanged = 0
     with SessionLocal.begin() as session:

@@ -1,45 +1,34 @@
-import type { Metadata } from "next";
-import { IBM_Plex_Sans_Arabic } from "next/font/google";
-import Link from "next/link";
-import { AuthNav } from "@/components/demo/AuthNav";
+import type { Metadata, Viewport } from "next";
+import { Noto_Kufi_Arabic, Poppins, Readex_Pro } from "next/font/google";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AuthProvider } from "@/hooks/useAuth";
 import { text } from "@/lib/text";
 import "./globals.css";
 
-const arabic = IBM_Plex_Sans_Arabic({
-  variable: "--font-arabic",
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
-});
+// UI text; the Arabic wordmark «قسطاس»; the Latin wordmark "QISTAS" (design handoff, section 1)
+const readex = Readex_Pro({ variable: "--font-readex", subsets: ["arabic", "latin"], weight: ["300", "400", "500", "600", "700"] });
+const kufi = Noto_Kufi_Arabic({ variable: "--font-kufi", subsets: ["arabic"], weight: ["700"] });
+const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight: ["600"] });
 
 export const metadata: Metadata = {
   title: `${text.appName} | ${text.tagline}`,
   description: text.tagline,
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fff9f1" },
+    { media: "(prefers-color-scheme: dark)", color: "#221f1a" },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${arabic.variable} h-full antialiased`}>
+    <html lang="ar" dir="rtl" className={`${readex.variable} ${kufi.variable} ${poppins.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
         <AuthProvider>
-        <header className="border-b border-line bg-surface">
-          <nav className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-            <Link href="/" className="text-xl font-bold text-primary">
-              {text.appName}
-            </Link>
-            <span className="hidden text-sm text-muted sm:inline">{text.tagline}</span>
-            <div className="ms-auto flex flex-wrap items-center gap-4">
-              <Link href="/" className="hover:text-primary">
-                {text.nav.analyze}
-              </Link>
-              <Link href="/search" className="hover:text-primary">
-                {text.nav.search}
-              </Link>
-              <AuthNav />
-            </div>
-          </nav>
-        </header>
-        <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">{children}</main>
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
         </AuthProvider>
       </body>
     </html>

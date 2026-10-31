@@ -29,10 +29,11 @@ from app.schemas import (
     LLMAnalysis,
     ReanalyzeRequest,
 )
-from app.search import SearchResult, search
+from app.search import SearchResult, search, search_violations
 from app.vault import seal, unseal
 
 RETRIEVAL_K = 8
+VIOLATIONS_K = 2  # closest rows of the violations table (fines), added for information
 MAX_ARTICLE_CHARS = 4000  # keep very long regulations articles from crowding out the rest
 
 DISCLAIMER = (
@@ -73,6 +74,8 @@ def _run(masked_description: str, documents: list[tuple[str, str]], gender: str 
     started = time.monotonic()
     query = masked_description + "".join(f"\n{text[:2000]}" for _, text in documents)
     results = expand(search(query, k=RETRIEVAL_K))
+    present = {r.record_id for r in results}
+    results += [v for v in search_violations(query, k=VIOLATIONS_K) if v.record_id not in present]
     prompt = build_user_prompt(masked_description, format_articles(results), _known_facts(gender), documents, today=date.today())
     llm, model_version = generate(prompt, system=SYSTEM_PROMPT, schema=LLMAnalysis)
     llm, warnings = check_grounding(llm, {r.record_id for r in results})

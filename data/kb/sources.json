@@ -71,6 +71,17 @@
       "source_url": "https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894",
       "collected_on": "2026-10-03",
       "priority": "secondary"
+    },
+    "جدول المخالفات والعقوبات": {
+      "code": "VIOLATIONS_112377",
+      "name_ar": "جدول المخالفات والعقوبات (القرار الوزاري رقم 112377)",
+      "legal_level": "decision",
+      "authority": "وزارة الموارد البشرية والتنمية الاجتماعية",
+      "issuing_instrument": "القرار الوزاري رقم (112377) وتاريخ 1447/8/21هـ",
+      "source_url": "https://www.hrsd.gov.sa/sites/default/files/2026-02/qrar-wzary---112377.pdf",
+      "collected_on": "2026-10-25",
+      "priority": "secondary",
+      "notes_en": "Fines the Ministry imposes on violators (paid to the state, not to the worker). Read from the scanned PDF by scripts/extract_violations.py. Secondary so that table rows rank below the Law and Regulations articles that give the worker's rights."
     }
   }
 }

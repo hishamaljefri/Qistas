@@ -145,7 +145,7 @@ are no longer blind; new cases are needed for a final, unbiased evaluation.
 | 4 | **Gaps in the knowledge-base file**: 38 Labor Law and 3 Regulations article numbers were missing | Risk of wrong or empty answers about those articles | Checked every gap against the official Bureau of Experts text and HRSD PDF: all were repealed or merged. Added a short record per article stating its status and the responsible royal decree |
 | 5 | **Version uncertainty**: the Regulations were re-issued in 2025 (decision 115921) | Risk of using an outdated version | Matched the file's page numbers and text against the official 2025 PDF; confirmed it includes the 2025 amendments (e.g. 12-week maternity leave, art. 151) |
 | 6 | **Inconsistent numbering of "bis" (مكرر) articles** (stored as "11.1") | Wrong ordering and labels | Normalized to "11 مكرر" with correct ordering |
-| 7 | **Violations & Penalties Table (2026) is a scanned PDF** | Its text cannot be extracted directly | Downloaded and recorded; OCR extraction planned (not yet in the knowledge base) |
+| 7 | **Violations & Penalties Table (2026) is a scanned PDF** | Its text cannot be extracted directly | Added on 2026-10-25: each page read by Gemini into structured rows, every fine checked against the scan, then loaded into the knowledge base (see "Violations and Penalties Table" below) |
 | 8 | **Very long provisions** (one article ≈ 11,600 characters) | Too long for one embedding; dilutes search | Structure-based chunking (one article = one chunk), with long articles split at paragraph/sentence boundaries and a context header on every chunk |
 | 9 | **Arabic spelling variation** (أ/ا، ة/ه، ى/ي، diacritics) | Keyword matching misses equivalent words | Arabic normalization before keyword search |
 | 10 | **Keyword search performed poorly on colloquial questions** (Hit@5 27%) and **lowered accuracy when combined** with semantic search | Hybrid search was worse than semantic search alone | Measured before deciding: default search = semantic search + explicit article-number lookup (Hit@5 100% on 37 questions); keyword search kept only as a separate mode |
@@ -257,3 +257,64 @@ database with the AI faked.
 | 25 | Short forms of a name ("خالد الغامدي" for "خالد سعد الغامدي", "الريادة" for "الريادة للمقاولات") escaped masking | Name variants are masked with the same placeholder; trade-off: short forms are shown back as the full name |
 | 26 | Requiring login changed every page's behavior | Central session handling: redirect to login and return to the original page; automatic logout on expiry |
 | 27 | Testing features that write to the database and call a paid/limited API | Separate `qistas_test` database and a fake Gemini in tests; real API used only for a small number of live checks |
+
+## Violations and Penalties Table (Day 6, 2026-10-25)
+
+Source: Ministerial Decision 112377 dated 21/8/1447H (HRSD, February 2026), a 24-page scanned PDF
+whose built-in text layer is unreadable.
+
+Method:
+1. `scripts/extract_violations.py` sends each page image to Gemini with a fixed JSON schema
+   (section, number, description, classification, every penalty column, notes). Pages are cached
+   so a failed page can be re-read alone. Page 24 (clauses رابعاً to أحد عشر) was transcribed by hand
+   because the free-tier daily limit was reached.
+2. `scripts/check_violations.py` checks numbering gaps, classifications and penalty cells: no gaps in
+   any of the 11 sections.
+3. Every violation number, classification and penalty cell was compared with the page images.
+   One OCR error was found and corrected: domestic-worker violation (ي) 16 is 20,000 SAR (the model
+   read 2,000). Corrections are listed inside `data/kb/violations_112377.json`. A review sheet
+   (Excel) was prepared for the team to confirm the descriptions.
+4. `scripts/load_kb.py` loads each violation as one provision (record ids `VIO-A-020`, …) and each
+   numbered clause of the decision as `VIO-CLAUSE-02` … `VIO-CLAUSE-11`; `embed_kb.py` embeds them.
+
+Result: 232 violations in 11 sections + 11 clauses = 243 new provisions (740 in total, 778 chunks).
+
+Design decisions:
+- Fines are paid to the state (Labor Law art. 232: fines go to the Human Resources Development
+  Fund), so they are never added to the worker's entitlements. Prompt v5, rule 12, says this, and
+  asks the model to choose the establishment category (ج ≤ 20 workers, ب 21–49, أ ≥ 50) only when the
+  number of workers is known.
+- The table is a `secondary` source (weight 0.6) so its rows do not displace the Law articles that
+  give the worker's rights. When a question asks about a fine (غرامة، عقوبة، مخالفة، يغرم، جزاء), a
+  violations-only ranking is fused in, and Labor Law art. 229 (the general penalties article) is
+  always included: first for a general question, second when a specific table row is closer.
+- Sector-only sections (domestic workers ي, agricultural ك, maritime ج, mines ب) are used only when
+  the question mentions that sector; otherwise "keeps my passport" matched the agricultural row
+  instead of the general one (أ 31).
+- Every case analysis also receives the 2 closest table rows (no extra API call: the question
+  embedding is cached).
+
+Evaluation:
+
+| Question set | Hit@1 | Hit@5 | MRR |
+|---|---|---|---|
+| 37 Labor Law questions (unchanged after adding the table) | 95% | 100% | 0.97 |
+| 11 new fine/penalty questions (`data/eval/violation_questions.jsonl`) | 91% | 100% | 0.94 |
+
+Keyword-only mode on the Law questions: Hit@5 51% → 49% (separate mode, not used by default).
+
+Live check (real Gemini): a contracting company with ~30 workers that keeps the worker's
+passport, delays wages and dismisses him. The analysis cited general violation (أ) 31, chose
+category ب (2,000 SAR, multiplied by the number of workers), stated that the fine is paid to the
+state, and kept it out of the entitlements (unpaid wages 12,000 + end-of-service 12,000 SAR).
+Tests: 46 automated tests pass (4 new: loader, checks, penalty and sector detection).
+
+## Additional challenges (Day 6)
+
+| # | Challenge | How we addressed it |
+|---|---|---|
+| 28 | OCR misread a fine on a scanned page (2,000 instead of 20,000 SAR) | Every penalty cell compared with the page images before use; corrections recorded in the data file; team review sheet |
+| 29 | Gemini free tier allows only 20 generation requests per model per day | Page results cached; fallback models; the last page transcribed by hand; analyses for the demo should be planned within the daily limit |
+| 30 | Table rows outranked the Law articles for general penalty questions | Table weighted as a secondary source; violations ranking fused only for penalty questions; art. 229 always included |
+| 31 | Sector-specific rows (agricultural, domestic) matched general cases | Sector sections are used only when the case mentions that sector |
+

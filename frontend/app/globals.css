@@ -1,41 +1,108 @@
 @import "tailwindcss";
 
 /*
-  DESIGN TOKENS: the single place that defines the look of the app.
+  DESIGN TOKENS: the single place that defines the look of the app (from the Claude Design handoff).
   Components only use these names (bg-surface, text-muted, border-line, bg-primary, rounded-card...),
-  never raw colors. To restyle the app (e.g. from a Claude Design system), change the values here
-  and the primitives in components/ui/. Nothing else needs to change.
+  never raw colors. To restyle the app, change the values here and the primitives in components/ui/.
 */
 :root {
-  --bg: #f7f7f5;
-  --surface: #ffffff;
-  --surface-muted: #f1f1ee;
-  --text: #1c1c1a;
-  --muted: #5f5f5a;
-  --line: #e2e2dc;
-  --primary: #1f5f4a;
-  --primary-fg: #ffffff;
-  --success: #1f7a4d;
-  --warning: #9a6b00;
-  --danger: #b3261e;
-  --radius-card: 12px;
-  --radius-control: 8px;
+  --bg: #f7e1c6; /* Sand */
+  --surface: #fff9f1;
+  --surface-muted: #fbefdf;
+  --text: #171814; /* Ink */
+  --muted: #6b5444;
+  --line: #e3c4a2; /* dividers, card borders */
+  --line-strong: #b08463; /* input and control borders */
+  --primary: #8a5a3b; /* Qistas Brown */
+  --primary-hover: #5c3a24;
+  --primary-fg: #fff9f1;
+  --primary-soft: #f7e1c6; /* active nav, selected choice, step bubbles */
+  --accent: #d9a04a; /* Sparkle Gold: decorative only, never text */
+  --focus: #5c3a24;
+  --success: #2e6b4e;
+  --success-bg: #dcebdf;
+  --warning: #8a5300;
+  --warning-bg: #fbe3b8;
+  --danger: #a12f27;
+  --danger-bg: #f7dad5;
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --shadow-card: 0 1px 2px rgba(92, 58, 36, 0.06), 0 8px 24px rgba(92, 58, 36, 0.06);
+  --shadow-dialog: 0 20px 50px rgba(0, 0, 0, 0.25);
+  --overlay: rgba(23, 24, 20, 0.45);
+
+  /* logo (SVG fills) */
+  --logo-beam: #8a5a3b;
+  --logo-gold: #d9a04a;
+  --logo-pan: #d9a04a;
+  --logo-word: #8a5a3b;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #141413;
-    --surface: #1d1d1b;
-    --surface-muted: #262624;
-    --text: #ededea;
-    --muted: #a3a39c;
-    --line: #34342f;
-    --primary: #5fb894;
-    --primary-fg: #0f1a15;
-    --success: #6cc792;
-    --warning: #e0b44c;
-    --danger: #f08a80;
+  :root:not([data-theme="light"]) {
+    --bg: #171814;
+    --surface: #221f1a;
+    --surface-muted: #2c2721;
+    --text: #f7e1c6;
+    --muted: #c9ae93;
+    --line: #3d352c;
+    --line-strong: #8a7058;
+    --primary: #bd8a65;
+    --primary-hover: #d4a27d;
+    --primary-fg: #171814;
+    --primary-soft: #3a2c22;
+    --accent: #e4b464;
+    --focus: #e4b464;
+    --success: #86c9a4;
+    --success-bg: #1d3328;
+    --warning: #e8b65c;
+    --warning-bg: #3a2b12;
+    --danger: #f09a8f;
+    --danger-bg: #3e1f1b;
+    --shadow-card: none;
+    --overlay: rgba(0, 0, 0, 0.6);
+    --logo-beam: #f7e1c6;
+    --logo-gold: #e4b464;
+    --logo-pan: #bd8a65;
+    --logo-word: #e4b464;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #171814;
+  --surface: #221f1a;
+  --surface-muted: #2c2721;
+  --text: #f7e1c6;
+  --muted: #c9ae93;
+  --line: #3d352c;
+  --line-strong: #8a7058;
+  --primary: #bd8a65;
+  --primary-hover: #d4a27d;
+  --primary-fg: #171814;
+  --primary-soft: #3a2c22;
+  --accent: #e4b464;
+  --focus: #e4b464;
+  --success: #86c9a4;
+  --success-bg: #1d3328;
+  --warning: #e8b65c;
+  --warning-bg: #3a2b12;
+  --danger: #f09a8f;
+  --danger-bg: #3e1f1b;
+  --shadow-card: none;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --logo-beam: #f7e1c6;
+  --logo-gold: #e4b464;
+  --logo-pan: #bd8a65;
+  --logo-word: #e4b464;
+}
+
+/* The brown brand panel (login) keeps the same colors in light and dark mode. */
+.q-brand {
+  --logo-beam: #f8e4cb;
+  --logo-gold: #e4b464;
+  --logo-pan: #e4b464;
+  --logo-word: #e4b464;
+  background: #8a5a3b;
+  color: #f8e4cb;
 }
 
 @theme inline {
@@ -45,17 +112,147 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-focus: var(--focus);
   --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
   --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
   --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
   --radius-card: var(--radius-card);
   --radius-control: var(--radius-control);
-  --font-sans: var(--font-arabic), system-ui, sans-serif;
+  --shadow-card: var(--shadow-card);
+  --shadow-dialog: var(--shadow-dialog);
+  --font-sans: var(--font-readex), system-ui, sans-serif;
+  --font-logo: var(--font-kufi), var(--font-readex), sans-serif;
+  --font-latin: var(--font-poppins), system-ui, sans-serif;
 }
 
-body {
-  background: var(--bg);
-  color: var(--text);
+/* Element defaults live in the base layer, so utility classes (e.g. a link styled as a button) win. */
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--text);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.85;
+  }
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--primary-soft);
+  }
+  a {
+    color: var(--primary);
+  }
+  a:hover {
+    color: var(--primary-hover);
+  }
+  mark {
+    background: var(--warning-bg);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 0 2px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* native <details>: no marker, chevron turns when open */
+  summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  details[open] > summary .q-chev {
+    transform: rotate(180deg);
+  }
+
+  dialog::backdrop {
+    background: var(--overlay);
+  }
+}
+
+.q-spin {
+  animation: q-rot 0.9s linear infinite;
+}
+@keyframes q-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Waiting screen: the balancing scale ---------- */
+/* .q-beam is the beam; .q-pan-l / .q-pan-r hold each pan's strings + bowl. The wrapper gets
+   .q-phase-swing while analysing, .q-phase-settle when the result arrives, .q-phase-error on failure.
+   Settle starts on a swing boundary (every 2.4s after the 1.2s tilt-in) so the hand-off is seamless. */
+.q-beam,
+.q-pan-l,
+.q-pan-r {
+  transform-box: view-box;
+  transform-origin: 60px 36px;
+}
+.q-phase-swing .q-beam {
+  animation: q-tilt-in 1.2s ease-out, q-swing 2.4s ease-in-out 1.2s infinite;
+}
+.q-phase-swing .q-pan-l {
+  animation: q-pan-l-in 1.2s ease-out, q-pan-l 2.4s ease-in-out 1.2s infinite;
+}
+.q-phase-swing .q-pan-r {
+  animation: q-pan-r-in 1.2s ease-out, q-pan-r 2.4s ease-in-out 1.2s infinite;
+}
+.q-phase-settle .q-beam {
+  animation: q-settle 2.4s ease-in-out forwards;
+}
+.q-phase-settle .q-pan-l {
+  animation: q-settle-l 2.4s ease-in-out forwards;
+}
+.q-phase-settle .q-pan-r {
+  animation: q-settle-r 2.4s ease-in-out forwards;
+}
+.q-phase-error .q-beam {
+  transform: rotate(9deg);
+}
+.q-phase-error .q-pan-l {
+  transform: translateY(-5.94px);
+}
+.q-phase-error .q-pan-r {
+  transform: translateY(5.94px);
+}
+
+/* pan offset = 38 * sin(angle) (38 = half beam length in the 120 viewBox) */
+@keyframes q-tilt-in { from { transform: rotate(0); } to { transform: rotate(9deg); } }
+@keyframes q-pan-l-in { from { transform: translateY(0); } to { transform: translateY(-5.94px); } }
+@keyframes q-pan-r-in { from { transform: translateY(0); } to { transform: translateY(5.94px); } }
+@keyframes q-swing { 0%, 100% { transform: rotate(9deg); } 50% { transform: rotate(-9deg); } }
+@keyframes q-pan-l { 0%, 100% { transform: translateY(-5.94px); } 50% { transform: translateY(5.94px); } }
+@keyframes q-pan-r { 0%, 100% { transform: translateY(5.94px); } 50% { transform: translateY(-5.94px); } }
+@keyframes q-settle { 0% { transform: rotate(9deg); } 30% { transform: rotate(-5deg); } 55% { transform: rotate(2.5deg); } 78% { transform: rotate(-1deg); } 100% { transform: rotate(0); } }
+@keyframes q-settle-l { 0% { transform: translateY(-5.94px); } 30% { transform: translateY(3.31px); } 55% { transform: translateY(-1.66px); } 78% { transform: translateY(0.66px); } 100% { transform: translateY(0); } }
+@keyframes q-settle-r { 0% { transform: translateY(5.94px); } 30% { transform: translateY(-3.31px); } 55% { transform: translateY(1.66px); } 78% { transform: translateY(-0.66px); } 100% { transform: translateY(0); } }
+@keyframes q-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .q-beam,
+  .q-pan-l,
+  .q-pan-r,
+  .q-spin {
+    animation: none !important;
+  }
+  .q-phase-swing svg {
+    animation: q-pulse 2s ease-in-out infinite;
+  }
 }

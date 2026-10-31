@@ -127,6 +127,7 @@ def gemini(monkeypatch):
     monkeypatch.setattr(analysis, "generate", fake.analysis)
     monkeypatch.setattr(analysis, "search", lambda q, k=8: [_search_result(r) for r in ARTICLES])
     monkeypatch.setattr(analysis, "expand", lambda results: results)
+    monkeypatch.setattr(analysis, "search_violations", lambda q, k=2: [])
     monkeypatch.setattr(claim, "generate", fake.claim)
     monkeypatch.setattr(documents, "generate", fake.ocr)
     return fake

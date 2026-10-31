@@ -1,0 +1,13 @@
+# Keep the backend image small and free of secrets (see backend/Dockerfile).
+.git
+.env
+.env.*
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+frontend
+docs
+data/raw
+data/eval
+backend/tests

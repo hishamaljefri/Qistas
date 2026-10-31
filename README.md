@@ -40,7 +40,8 @@ qistas/
     ├── kb/                  knowledge base (committed)
     │   ├── QISTAS_Legal_Knowledge_Base_RAG.jsonl   456 provisions
     │   ├── sources.json                            metadata per legal document
-    │   └── status_notes.json                       repealed / merged articles (verified)
+    │   ├── status_notes.json                       repealed / merged articles (verified)
+    │   └── violations_112377.json                  violations & penalties table (from the scanned PDF)
     └── raw/                 original official PDFs (not committed, see below)
 ```
 
@@ -74,9 +75,13 @@ sudo -u postgres psql -c "CREATE ROLE qistas LOGIN PASSWORD 'choose-a-password';
 sudo -u postgres psql -c "CREATE DATABASE qistas OWNER qistas;"
 sudo -u postgres psql -d qistas -c "CREATE EXTENSION vector;"
 
-# 2. .env in the project root
+# 2. .env in the project root (all four lines are required; keep this file private and backed up)
 echo "DATABASE_URL=postgresql://qistas:choose-a-password@127.0.0.1:5432/qistas" > .env
-echo "GEMINI_API_KEY=" >> .env
+echo "GEMINI_API_KEY=your-key-from-aistudio.google.com" >> .env
+echo "JWT_SECRET=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')" >> .env
+echo "ENCRYPTION_KEY=$(python3 -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())')" >> .env
+# ENCRYPTION_KEY unlocks the real names saved with cases: if it is lost they cannot be recovered.
+# To use a copy of someone else's database, use their ENCRYPTION_KEY instead of a new one.
 
 # 3. backend
 cd backend
@@ -84,6 +89,15 @@ uv sync                              # installs Python 3.12 + libraries
 uv run alembic upgrade head          # creates the tables
 uv run python -m scripts.load_kb     # loads the knowledge base (safe to re-run)
 uv run python -m scripts.embed_kb    # Gemini embeddings for new chunks (~5 min first time, resumable)
+
+# 4. test database (the tests never touch the real one)
+sudo -u postgres psql -c "CREATE DATABASE qistas_test OWNER qistas;"
+sudo -u postgres psql -d qistas_test -c "CREATE EXTENSION vector;"
+DATABASE_URL=postgresql://qistas:choose-a-password@127.0.0.1:5432/qistas_test uv run alembic upgrade head
+uv run pytest
+
+# 5. start everything (installs the website's libraries the first time)
+cd .. && ./dev.sh
 ```
 
 ## Search
@@ -127,20 +141,35 @@ Chat model: `GEMINI_CHAT_MODEL` (default `gemini-flash-latest`) with automatic f
 - **Scope (v1):** Saudi Labor Law (all 245 articles + 4 "مكرر" articles), its
   Implementing Regulations (ministerial decision 115921, 1446/08/19هـ) and annexes 1–5.
 - **Up to date as of:** 2026-10-03 (stored per source in `legal_sources.collected_on`).
+- **Size:** 740 provisions in 778 searchable chunks (Law, Regulations, annexes 1–5, violations table).
 - **Repealed / merged articles:** 38 Labor Law articles and 3 regulations articles are
   absent from the source file because they were repealed or merged. Each was verified
   against the official text and is stored as a short record stating its status and the
   royal decree responsible (see `data/kb/status_notes.json`).
-- **Priority:** Labor Law, Regulations and Annex 1 are `core`; Annexes 2–5
-  (disability accommodations, recruitment intermediaries, recruitment companies,
-  contract templates) are `secondary`.
+- **Priority:** Labor Law and Regulations are `core`; Annexes 1–5 (model work regulations,
+  disability accommodations, recruitment intermediaries, recruitment companies, contract
+  templates) and the violations table are `secondary`.
 
 ### Official sources
 - Labor Law (Bureau of Experts): https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/08381293-6388-48e2-8ad2-a9a700f2aa94/1
 - Implementing Regulations and annexes (HRSD): https://www.hrsd.gov.sa/ar/knowledge-centre/decisions-and-regulations/regulation-and-procedures/838894
 - Violations and Penalties Table, ministerial decision 112377 (Feb 2026, HRSD):
   https://www.hrsd.gov.sa/sites/default/files/2026-02/qrar-wzary---112377.pdf
-  (scanned PDF; not yet in the knowledge base)
+  (scanned PDF; included since 2026-10-25, see below)
+
+### Violations and penalties table
+
+232 violations in 11 sections plus the decision's 11 clauses, record ids `VIO-A-020` and
+`VIO-CLAUSE-04`. The fines are paid to the state, so they are shown as information and never
+added to the worker's entitlements. Rebuilding it:
+```bash
+cd backend
+uv run python -m scripts.extract_violations      # reads data/raw/...112377....pdf page by page (Gemini; cached)
+uv run python -m scripts.check_violations        # numbering gaps, unclear penalties
+# check data/kb/violations_112377.json against the PDF, then:
+uv run python -m scripts.load_kb && uv run python -m scripts.embed_kb
+uv run python -m scripts.eval_retrieval --questions data/eval/violation_questions.jsonl
+```
 
 `data/raw/` holds downloaded copies of these PDFs. It is git-ignored because of size
 (the violations table alone is 35 MB); re-download from the links above.
@@ -166,5 +195,5 @@ structured for a later redesign; see `frontend/DESIGN.md`.
 
 Privacy: the database stores masked text only. Real names/IDs are encrypted (Fernet, `ENCRYPTION_KEY`)
 and decrypted only for the case owner. Tests run on a separate `qistas_test` database
-(`uv run pytest`, 41 tests, Gemini faked). Test fixtures contain fictitious people and numbers.
+(`uv run pytest`, 46 tests, Gemini faked). Test fixtures contain fictitious people and numbers.
 The Arabic PDF font (IBM Plex Sans Arabic, SIL Open Font License) is in `backend/assets/fonts/`.

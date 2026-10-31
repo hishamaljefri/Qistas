@@ -1,0 +1,29 @@
+# Render Blueprint: the QISTAS backend API (FastAPI) as a Docker web service.
+# The database is on Neon and the website on Vercel. Secret values are entered in the Render
+# dashboard when the Blueprint is created (sync: false), never stored in this file.
+services:
+  - type: web
+    name: qistas-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+        - data/kb/companions.json
+        - render.yaml
+    envVars:
+      - key: DATABASE_URL # Neon connection string (pooled)
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY # Fernet key; a different one from the local .env
+        sync: false
+      - key: CORS_ORIGINS # the Vercel website address, e.g. https://qistas.vercel.app
+        sync: false
